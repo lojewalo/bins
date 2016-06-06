@@ -53,30 +53,6 @@ impl Hastebin {
   }
 }
 
-struct HastebinData {
-  data: String
-}
-
-impl<'a> From<&'a Vec<PasteFile>> for HastebinData {
-  fn from(files: &'a Vec<PasteFile>) -> Self {
-    let data = if files.len() < 2 {
-      files[0].clone().data
-    } else {
-      files.iter().map(|f| {
-          let file = f.clone();
-          format!(
-            "{}\n{}\n\n{}",
-            file.name,
-            repeat("-").take(file.name.len()).collect::<String>(),
-            file.data
-          )
-        }
-      ).collect::<Vec<_>>().join("\n")
-    };
-    HastebinData { data: data }
-  }
-}
-
 impl Engine for Hastebin {
   fn upload(&self, config: &Config, data: &Vec<PasteFile>) -> Result<String, String> {
     if data.len() < 2 {

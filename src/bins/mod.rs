@@ -16,6 +16,7 @@ use bins::arguments::Arguments;
 use bins::engines::Engine;
 use bins::engines::gist::Gist;
 use bins::engines::hastebin::Hastebin;
+use bins::engines::pastie::Pastie;
 
 #[derive(Clone)]
 pub struct PasteFile {
@@ -46,6 +47,7 @@ impl Bins {
     match self.arguments.service.to_lowercase().as_ref() {
       "gist" => Ok(Box::new(Gist::new())),
       "hastebin" => Ok(Box::new(Hastebin::new())),
+      "pastie" => Ok(Box::new(Pastie::new())),
       _ => Err(format!("unknown service \"{}\"", self.arguments.service))
     }
   }
