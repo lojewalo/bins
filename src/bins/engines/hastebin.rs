@@ -26,6 +26,7 @@ impl Hastebin {
 struct HastebinUrlProducer { }
 
 impl ProducesUrl for HastebinUrlProducer {
+  #[allow(unused_variables)]
   fn produce_url(&self, config: &Config, res: Response, data: String) -> Result<String, String> {
     let raw_response = try!(Json::from_str(&data).map_err(|e| e.to_string()));
     let response = some_or_err!(raw_response.as_object(), String::from("response was not a json object"));
@@ -40,6 +41,7 @@ impl ProducesUrl for HastebinUrlProducer {
 struct HastebinBodyProducer { }
 
 impl ProducesBody for HastebinBodyProducer {
+  #[allow(unused_variables)]
   fn produce_body(&self, config: &Config, data: &PasteFile) -> Result<String, String> {
     Ok(data.clone().data)
   }

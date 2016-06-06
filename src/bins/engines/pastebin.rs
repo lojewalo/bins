@@ -28,6 +28,7 @@ impl Pastebin {
 struct PastebinUrlProducer { }
 
 impl ProducesUrl for PastebinUrlProducer {
+  #[allow(unused_variables)]
   fn produce_url(&self, config: &Config, res: Response, data: String) -> Result<String, String> {
     Ok(data)
   }
