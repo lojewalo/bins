@@ -2,6 +2,7 @@ pub mod gist;
 pub mod hastebin;
 pub mod pastie;
 pub mod pastebin;
+mod batch;
 
 use config::types::Config;
 use bins::PasteFile;
