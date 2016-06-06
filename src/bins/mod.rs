@@ -17,6 +17,7 @@ use bins::engines::Engine;
 use bins::engines::gist::Gist;
 use bins::engines::hastebin::Hastebin;
 use bins::engines::pastie::Pastie;
+use bins::engines::pastebin::Pastebin;
 
 #[derive(Clone)]
 pub struct PasteFile {
@@ -48,6 +49,7 @@ impl Bins {
       "gist" => Ok(Box::new(Gist::new())),
       "hastebin" => Ok(Box::new(Hastebin::new())),
       "pastie" => Ok(Box::new(Pastie::new())),
+      "pastebin" => Ok(Box::new(Pastebin::new())),
       _ => Err(format!("unknown service \"{}\"", self.arguments.service))
     }
   }

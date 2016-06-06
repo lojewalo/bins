@@ -1,6 +1,7 @@
 pub mod gist;
 pub mod hastebin;
 pub mod pastie;
+pub mod pastebin;
 
 use config::types::Config;
 use bins::PasteFile;

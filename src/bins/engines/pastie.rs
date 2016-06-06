@@ -21,16 +21,13 @@ impl Pastie {
       .append_pair("paste[restricted]", "1")
       .finish();
     let client = Client::new();
-    let mut res = try!(
+    let res = try!(
       client.post("http://pastie.org/pastes")
         .body(&encoded)
         .send()
         .map_err(|e| e.to_string())
     );
-    let mut s = String::from("");
-    try!(res.read_to_string(&mut s).map_err(|e| e.to_string()));
     if res.status != StatusCode::Ok {
-      println!("{}", s);
       return Err(String::from("pastie could not be created"));
     }
     Ok(res.url.as_str().to_owned())
