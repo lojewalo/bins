@@ -51,9 +51,9 @@ pub trait UploadsBatches {
     let header = format!("{} files", data.len());
     let separator = Self::repeat_str("-", header.len());
     let mut body = String::from("");
-    for file in data.iter().enumerate() {
-      let number = file.0 + 1;
-      &body.push_str(&format!("{number}. {name}: <url{number}>\n", number = number, name = file.1.name));
+    for (i, file) in data.iter().enumerate() {
+      let number = i + 1;
+      &body.push_str(&format!("{number}. {name}: <url{number}>\n", number = number, name = file.name));
     }
     header + "\n" + &separator + "\n\n" + &body
   }

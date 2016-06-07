@@ -11,6 +11,7 @@ extern crate config;
 use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
+use std::collections::HashMap;
 use config::types::Config;
 use bins::arguments::Arguments;
 use bins::engines::Engine;
@@ -109,7 +110,9 @@ impl Bins {
           return Err(res.err().unwrap().to_string());
         }
       }
-      results.iter().cloned().map(|r| r.unwrap()).collect()
+      let mut pastes = results.iter().cloned().map(|r| r.unwrap()).collect::<Vec<_>>();
+      self.handle_duplicate_file_names(&mut pastes);
+      pastes
     } else {
       let mut buffer = String::new();
       if let Err(e) = std::io::stdin().read_to_string(&mut buffer) {
@@ -118,5 +121,19 @@ impl Bins {
       vec![PasteFile::new(String::from("stdin"), buffer)]
     };
     Ok(paste_files)
+  }
+
+  fn handle_duplicate_file_names(&self, pastes: &mut Vec<PasteFile>) {
+    let clone = pastes.clone();
+    let names = clone.iter().map(|p| &p.name).collect::<Vec<_>>();
+    let mut names_map: HashMap<String, i32> = HashMap::new();
+    for mut paste in pastes {
+      let name = paste.name.clone();
+      if names.contains(&&name) {
+        let number = names_map.entry(name.clone()).or_insert(1);
+        paste.name = format!("{}_{}", name, number);
+        *number += 1;
+      }
+    }
   }
 }
