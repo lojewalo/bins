@@ -137,7 +137,7 @@ impl Bins {
     for mut paste in pastes {
       let name = paste.name.clone();
       if names_map.contains_key(&name) {
-          let parts = name.rsplit(".");
+        let parts = name.rsplit(".");
         let (beginning, end) = if parts.clone().count() > 1 {
           let mut beginning_parts = parts.clone().skip(1).collect::<Vec<_>>();
           beginning_parts.reverse();
