@@ -34,6 +34,11 @@ pub fn get_arguments(config: &Config) -> Arguments {
     ap.refer(&mut arguments.auth)
       .add_option(&["-a", "--auth"], StoreTrue, "if authentication (like api keys and tokens) should be used")
       .add_option(&["-A", "--anon"], StoreFalse, "if pastes should be posted without authentication");
+    ap.add_option(
+      &["-l", "--list-services"],
+      Print(String::from("gist, hastebin, pastebin, pastie")),
+      "lists pastebin services available"
+    );
     ap.parse_args_or_exit();
   }
   arguments
