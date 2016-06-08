@@ -16,9 +16,9 @@ macro_rules! or_exit {
 }
 
 fn make_bins() -> Result<Bins, String> {
-  let arguments = arguments::get_arguments();
   let configuration = BinsConfiguration::new();
   let config = try!(configuration.parse_config().map_err(|e| format!("config error: {}", e)));
+  let arguments = arguments::get_arguments(&config);
   Ok(Bins::new(config, arguments))
 }
 
@@ -26,7 +26,7 @@ fn inner() -> i32 {
   let bins = or_exit!(make_bins());
   let to_paste = or_exit!(bins.get_to_paste());
   let engine = or_exit!(bins.get_engine());
-  let url = or_exit!(engine.upload(&bins.config, &to_paste));
+  let url = or_exit!(engine.upload(&bins, &to_paste));
   println!("{}", url);
   0
 }

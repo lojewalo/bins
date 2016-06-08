@@ -1,6 +1,5 @@
-use bins::PasteFile;
+use bins::{Bins, PasteFile};
 use bins::engines::Engine;
-use config::types::Config;
 use hyper::client::Response;
 use rustc_serialize::json::Json;
 use bins::engines::batch::{BatchUpload, UploadsBatches, ProducesUrl, ProducesBody};
@@ -27,7 +26,7 @@ struct HastebinUrlProducer { }
 
 impl ProducesUrl for HastebinUrlProducer {
   #[allow(unused_variables)]
-  fn produce_url(&self, config: &Config, res: Response, data: String) -> Result<String, String> {
+  fn produce_url(&self, bins: &Bins, res: Response, data: String) -> Result<String, String> {
     let raw_response = try!(Json::from_str(&data).map_err(|e| e.to_string()));
     let response = some_or_err!(raw_response.as_object(), String::from("response was not a json object"));
     let raw_key = some_or_err!(response.get("key"), String::from("no key"));
@@ -42,13 +41,13 @@ struct HastebinBodyProducer { }
 
 impl ProducesBody for HastebinBodyProducer {
   #[allow(unused_variables)]
-  fn produce_body(&self, config: &Config, data: &PasteFile) -> Result<String, String> {
+  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String, String> {
     Ok(data.clone().data)
   }
 }
 
 impl Engine for Hastebin {
-  fn upload(&self, config: &Config, data: &Vec<PasteFile>) -> Result<String, String> {
-    self.batch_upload.upload(config, data)
+  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String, String> {
+    self.batch_upload.upload(bins, data)
   }
 }

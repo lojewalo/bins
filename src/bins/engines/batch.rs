@@ -1,5 +1,4 @@
-use config::types::Config;
-use bins::PasteFile;
+use bins::{Bins, PasteFile};
 use std::iter::repeat;
 use hyper::client::Client;
 use hyper::client::Response;
@@ -15,21 +14,21 @@ pub struct BatchUpload {
 }
 
 pub trait ProducesUrl {
-  fn produce_url(&self, config: &Config, res: Response, data: String) -> Result<String, String>;
+  fn produce_url(&self, bins: &Bins, res: Response, data: String) -> Result<String, String>;
 }
 
 pub trait ProducesBody {
-  fn produce_body(&self, config: &Config, data: &PasteFile) -> Result<String, String>;
+  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String, String>;
 }
 
 pub trait UploadsBatches {
-  fn real_upload(&self, config: &Config, data: &PasteFile) -> Result<String, String>;
+  fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String, String>;
 
-  fn upload(&self, config: &Config, data: &Vec<PasteFile>) -> Result<String, String> {
+  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String, String> {
     if data.len() < 2 {
-      return self.real_upload(config, &data[0]);
+      return self.real_upload(bins, &data[0]);
     }
-    let wrapped_urls = data.iter().map(|f| self.real_upload(config, f)).collect::<Vec<_>>();
+    let wrapped_urls = data.iter().map(|f| self.real_upload(bins, f)).collect::<Vec<_>>();
     for url in wrapped_urls.iter().cloned() {
       if url.is_err() {
         return Err(url.err().unwrap().to_string());
@@ -43,7 +42,7 @@ pub trait UploadsBatches {
       index = index.replace(&replace, url.as_ref());
       number += 1;
     }
-    let index_url = try!(self.real_upload(config, &PasteFile { name: String::from("index"), data: index }));
+    let index_url = try!(self.real_upload(bins, &PasteFile { name: String::from("index"), data: index }));
     Ok(index_url)
   }
 
@@ -64,21 +63,22 @@ pub trait UploadsBatches {
 }
 
 impl UploadsBatches for BatchUpload {
-  fn real_upload(&self, config: &Config, data: &PasteFile) -> Result<String, String> {
+  fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String, String> {
     let client = Client::new();
     let mut res = try!(
       client.post(&self.url)
         .headers(self.headers.clone())
-        .body(&try!(self.body_producer.as_ref().produce_body(config, data)))
+        .body(&try!(self.body_producer.as_ref().produce_body(bins, data)))
         .send()
         .map_err(|e| e.to_string())
     );
     let mut s = String::from("");
     try!(res.read_to_string(&mut s).map_err(|e| e.to_string()));
-    if res.status != StatusCode::Ok {
+    // 404 for pastie, which appears to have issues when redirecting?
+    if res.status != StatusCode::Ok && res.status != StatusCode::NotFound {
       println!("{}", s);
       return Err(String::from("paste could not be created"));
     }
-    self.url_producer.as_ref().produce_url(config, res, s)
+    self.url_producer.as_ref().produce_url(bins, res, s)
   }
 }

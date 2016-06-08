@@ -8,7 +8,21 @@ use config::types::Config;
 use bins::error::{BinsError, BinsErrorKind};
 
 const DEFAULT_CONFIG_FILE: &'static str =
-r#"gist = {
+r#"defaults = {
+  /*
+   * If this is true, all pastes will be created as private or unlisted.
+   * Using the command-line option `--public` or `--private` will change this behavior.
+   */
+  private = true;
+  /*
+   * If this is true, all pastes will be made to accounts or with API keys defined in this file.
+   * Pastebin ignores this setting and the command-line argument, since Pastebin requires an API key to paste.
+   * Using the command-line option `--auth` or `--anon` will change this behavior.
+   */
+  auth = true;
+};
+
+gist = {
   /*
    * The username to use for gist.github.com. This is ignored if access_token is empty.
    */
