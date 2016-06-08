@@ -21,3 +21,8 @@ Add `$HOME/.cargo/bin` to your `$PATH` or move `$HOME/.cargo/bin/bins` to `/usr/
 To get help, use `bins -h`. bins accepts a list of multiple files, a string, or piped data.
 
 See [asciinema](https://asciinema.org/a/48190) for a demo.
+
+### Configuration
+
+There is a configuration file with documentation that is generated at `$HOME/.bins.cfg` after the first run of the
+program.
