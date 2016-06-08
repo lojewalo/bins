@@ -2,12 +2,12 @@ use bins::error::*;
 use bins::{Bins, PasteFile};
 use bins::engines::Engine;
 use hyper::client::Response;
-use bins::engines::batch::{BatchUpload, UploadsBatches, ProducesUrl, ProducesBody};
+use bins::engines::indexed::{IndexedUpload, UploadsIndices, ProducesUrl, ProducesBody};
 use hyper::header::{Headers, ContentType};
 use url::form_urlencoded;
 
 pub struct Pastie {
-  batch_upload: BatchUpload
+  indexed_upload: IndexedUpload
 }
 
 impl Pastie {
@@ -15,7 +15,7 @@ impl Pastie {
     let mut headers = Headers::new();
     &headers.set(ContentType::form_url_encoded());
     Pastie {
-      batch_upload: BatchUpload {
+      indexed_upload: IndexedUpload {
         url: String::from("http://pastie.org/pastes"),
         headers: headers,
         url_producer: Box::new(PastieUrlProducer { }),
@@ -51,6 +51,6 @@ impl ProducesBody for PastieBodyProducer {
 
 impl Engine for Pastie {
   fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
-    self.batch_upload.upload(bins, data)
+    self.indexed_upload.upload(bins, data)
   }
 }

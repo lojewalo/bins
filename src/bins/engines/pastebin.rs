@@ -2,12 +2,12 @@ use bins::error::*;
 use bins::{Bins, PasteFile};
 use bins::engines::Engine;
 use hyper::client::Response;
-use bins::engines::batch::{BatchUpload, UploadsBatches, ProducesUrl, ProducesBody};
+use bins::engines::indexed::{IndexedUpload, UploadsIndices, ProducesUrl, ProducesBody};
 use hyper::header::{Headers, ContentType};
 use url::form_urlencoded;
 
 pub struct Pastebin {
-  batch_upload: BatchUpload
+  indexed_upload: IndexedUpload
 }
 
 impl Pastebin {
@@ -15,7 +15,7 @@ impl Pastebin {
     let mut headers = Headers::new();
     &headers.set(ContentType::form_url_encoded());
     Pastebin {
-      batch_upload: BatchUpload {
+      indexed_upload: IndexedUpload {
         url: String::from("http://pastebin.com/api/api_post.php"),
         headers: headers,
         url_producer: Box::new(PastebinUrlProducer { }),
@@ -56,6 +56,6 @@ impl ProducesBody for PastebinBodyProducer {
 
 impl Engine for Pastebin {
   fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
-    self.batch_upload.upload(bins, data)
+    self.indexed_upload.upload(bins, data)
   }
 }

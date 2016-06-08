@@ -3,17 +3,17 @@ use bins::{Bins, PasteFile};
 use bins::engines::Engine;
 use hyper::client::Response;
 use rustc_serialize::json::Json;
-use bins::engines::batch::{BatchUpload, UploadsBatches, ProducesUrl, ProducesBody};
+use bins::engines::indexed::{IndexedUpload, UploadsIndices, ProducesUrl, ProducesBody};
 use hyper::header::Headers;
 
 pub struct Hastebin {
-  batch_upload: BatchUpload
+  indexed_upload: IndexedUpload
 }
 
 impl Hastebin {
   pub fn new() -> Self {
     Hastebin {
-      batch_upload: BatchUpload {
+      indexed_upload: IndexedUpload {
         url: String::from("http://hastebin.com/documents"),
         headers: Headers::new(),
         url_producer: Box::new(HastebinUrlProducer { }),
@@ -49,6 +49,6 @@ impl ProducesBody for HastebinBodyProducer {
 
 impl Engine for Hastebin {
   fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
-    self.batch_upload.upload(bins, data)
+    self.indexed_upload.upload(bins, data)
   }
 }

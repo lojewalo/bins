@@ -2,7 +2,7 @@ pub mod gist;
 pub mod hastebin;
 pub mod pastie;
 pub mod pastebin;
-mod batch;
+mod indexed;
 
 use bins::error::*;
 use bins::PasteFile;

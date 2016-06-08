@@ -7,7 +7,7 @@ use hyper::header::Headers;
 use std::io::Read;
 use hyper::status::StatusCode;
 
-pub struct BatchUpload {
+pub struct IndexedUpload {
   pub url: String,
   pub headers: Headers,
   pub url_producer: Box<ProducesUrl>,
@@ -22,7 +22,7 @@ pub trait ProducesBody {
   fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String>;
 }
 
-pub trait UploadsBatches {
+pub trait UploadsIndices {
   fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String>;
 
   fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
@@ -63,7 +63,7 @@ pub trait UploadsBatches {
   }
 }
 
-impl UploadsBatches for BatchUpload {
+impl UploadsIndices for IndexedUpload {
   fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String> {
     let client = Client::new();
     let mut res = try!(
