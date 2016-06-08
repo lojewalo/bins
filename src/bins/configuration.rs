@@ -5,7 +5,7 @@ use std::fs::File;
 use std::path::PathBuf;
 use std::env;
 use config::types::Config;
-use bins::error::{BinsError, BinsErrorKind};
+use bins::error::*;
 
 const DEFAULT_CONFIG_FILE: &'static str =
 r#"defaults = {
@@ -52,7 +52,7 @@ impl BinsConfiguration {
 }
 
 pub trait Configurable {
-  fn parse_config(&self) -> Result<Config, BinsError>;
+  fn parse_config(&self) -> Result<Config>;
 
   fn get_config_path(&self) -> Option<PathBuf> {
     let mut home = match env::home_dir() {
@@ -65,23 +65,18 @@ pub trait Configurable {
 }
 
 impl Configurable for BinsConfiguration {
-  fn parse_config(&self) -> Result<Config, BinsError> {
+  fn parse_config(&self) -> Result<Config> {
     let path = match self.get_config_path() {
       Some(p) => p,
-      None => return Err(
-        BinsError {
-          kind: BinsErrorKind::None,
-          message: String::from("could not get path to the configuration file")
-        }
-      )
+      None => return Err("could not get path to the configuration file".into())
     };
     if !&path.exists() {
       let mut file = try!(File::create(&path));
       try!(file.write_all(DEFAULT_CONFIG_FILE.as_bytes()));
     }
     if (&path).is_dir() || !&path.is_file() {
-      return Err(BinsError::from("configuration file exists, but is not a valid file"))
+      return Err("configuration file exists, but is not a valid file".into())
     }
-    config::reader::from_file(path.as_path()).map_err(|e| BinsError::from(e))
+    Ok(try!(config::reader::from_file(path.as_path())))
   }
 }

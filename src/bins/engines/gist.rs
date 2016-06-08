@@ -1,3 +1,4 @@
+use bins::error::*;
 use bins::{Bins, PasteFile};
 use bins::engines::Engine;
 use hyper::client::Client;
@@ -53,7 +54,7 @@ impl Gist {
 }
 
 impl Engine for Gist {
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String, String> {
+  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
     let upload = GistUpload::from(bins, data);
     let j = try!(json::encode(&upload).map_err(|e| e.to_string()));
     let client = Client::new();
@@ -87,12 +88,12 @@ impl Engine for Gist {
     try!(res.read_to_string(&mut s).map_err(|e| e.to_string()));
     if res.status != StatusCode::Created {
       println!("{}", s);
-      return Err(String::from("paste could not be created"));
+      return Err("paste could not be created".into());
     }
     let raw_gist = try!(Json::from_str(&s).map_err(|e| e.to_string()));
-    let gist = some_or_err!(raw_gist.as_object(), String::from("response was not a json object"));
-    let html_url = some_or_err!(gist.get("html_url"), String::from("no html_url_key"));
-    let url = some_or_err!(html_url.as_string(), String::from("html_url was not a string"));
+    let gist = some_or_err!(raw_gist.as_object(), "response was not a json object".into());
+    let html_url = some_or_err!(gist.get("html_url"), "no html_url_key".into());
+    let url = some_or_err!(html_url.as_string(), "html_url was not a string".into());
     Ok(url.to_owned())
   }
 }

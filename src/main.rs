@@ -3,21 +3,24 @@ extern crate argparse;
 extern crate hyper;
 extern crate rustc_serialize;
 extern crate url;
+#[macro_use]
+extern crate error_chain;
 
 mod bins;
 
+use bins::error::*;
 use bins::Bins;
 use bins::arguments;
 use bins::configuration::{BinsConfiguration, Configurable};
 use bins::engines::Engine;
 
 macro_rules! or_exit {
-    ($expr: expr) => { match $expr { Ok(x) => x, Err(e) => { println!("{}", e); return 1; } } };
+    ($expr: expr) => { match $expr { Ok(x) => x, Err(e) => { for err in e.iter() { println!("{}", err); } return 1; } } };
 }
 
-fn make_bins() -> Result<Bins, String> {
+fn make_bins() -> Result<Bins> {
   let configuration = BinsConfiguration::new();
-  let config = try!(configuration.parse_config().map_err(|e| format!("config error: {}", e)));
+  let config = try!(configuration.parse_config());
   let arguments = arguments::get_arguments(&config);
   Ok(Bins::new(config, arguments))
 }

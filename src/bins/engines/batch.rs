@@ -1,3 +1,4 @@
+use bins::error::*;
 use bins::{Bins, PasteFile};
 use std::iter::repeat;
 use hyper::client::Client;
@@ -14,24 +15,24 @@ pub struct BatchUpload {
 }
 
 pub trait ProducesUrl {
-  fn produce_url(&self, bins: &Bins, res: Response, data: String) -> Result<String, String>;
+  fn produce_url(&self, bins: &Bins, res: Response, data: String) -> Result<String>;
 }
 
 pub trait ProducesBody {
-  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String, String>;
+  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String>;
 }
 
 pub trait UploadsBatches {
-  fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String, String>;
+  fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String>;
 
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String, String> {
+  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
     if data.len() < 2 {
       return self.real_upload(bins, &data[0]);
     }
-    let wrapped_urls = data.iter().map(|f| self.real_upload(bins, f)).collect::<Vec<_>>();
+    let wrapped_urls = data.iter().map(|f| self.real_upload(bins, f)).map(|r| r.map_err(|e| e.iter().map(|x| x.to_string()).collect::<Vec<_>>().join("\n"))).collect::<Vec<_>>();
     for url in wrapped_urls.iter().cloned() {
       if url.is_err() {
-        return Err(url.err().unwrap().to_string());
+        return Err(url.err().unwrap().into());
       }
     }
     let urls = wrapped_urls.iter().cloned().map(|r| r.unwrap());
@@ -63,7 +64,7 @@ pub trait UploadsBatches {
 }
 
 impl UploadsBatches for BatchUpload {
-  fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String, String> {
+  fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String> {
     let client = Client::new();
     let mut res = try!(
       client.post(&self.url)
@@ -77,7 +78,7 @@ impl UploadsBatches for BatchUpload {
     // 404 for pastie, which appears to have issues when redirecting?
     if res.status != StatusCode::Ok && res.status != StatusCode::NotFound {
       println!("{}", s);
-      return Err(String::from("paste could not be created"));
+      return Err("paste could not be created".into());
     }
     self.url_producer.as_ref().produce_url(bins, res, s)
   }

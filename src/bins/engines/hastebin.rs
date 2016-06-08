@@ -1,3 +1,4 @@
+use bins::error::*;
 use bins::{Bins, PasteFile};
 use bins::engines::Engine;
 use hyper::client::Response;
@@ -26,13 +27,13 @@ struct HastebinUrlProducer { }
 
 impl ProducesUrl for HastebinUrlProducer {
   #[allow(unused_variables)]
-  fn produce_url(&self, bins: &Bins, res: Response, data: String) -> Result<String, String> {
+  fn produce_url(&self, bins: &Bins, res: Response, data: String) -> Result<String> {
     let raw_response = try!(Json::from_str(&data).map_err(|e| e.to_string()));
-    let response = some_or_err!(raw_response.as_object(), String::from("response was not a json object"));
-    let raw_key = some_or_err!(response.get("key"), String::from("no key"));
-    let key = some_or_err!(raw_key.as_string(), String::from("key was not a string"));
+    let response = some_or_err!(raw_response.as_object(), "response was not a json object".into());
+    let raw_key = some_or_err!(response.get("key"), "no key".into());
+    let key = some_or_err!(raw_key.as_string(), "key was not a string".into());
     let scheme = res.url.scheme();
-    let host = some_or_err!(res.url.host_str(), String::from("no host string"));
+    let host = some_or_err!(res.url.host_str(), "no host string".into());
     Ok(format!("{}://{}/{}", scheme, host, key))
   }
 }
@@ -41,13 +42,13 @@ struct HastebinBodyProducer { }
 
 impl ProducesBody for HastebinBodyProducer {
   #[allow(unused_variables)]
-  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String, String> {
+  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String> {
     Ok(data.clone().data)
   }
 }
 
 impl Engine for Hastebin {
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String, String> {
+  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
     self.batch_upload.upload(bins, data)
   }
 }

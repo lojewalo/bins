@@ -1,68 +1,37 @@
-extern crate std;
-extern crate config;
+use config;
+use std::io;
 
-use std::fmt::{self, Display};
-use config::error::ConfigError;
-
-#[derive(Debug)]
-pub struct BinsError {
-  pub kind: BinsErrorKind,
-  pub message: String
-}
-
-impl Display for BinsError {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{}", self.message)
+error_chain! {
+  // The type defined for this error. These are the conventional
+  // and recommended names, but they can be arbitrarily chosen.
+  types {
+    Error, ErrorKind, ChainErr, Result;
   }
-}
 
-impl std::error::Error for BinsError {
-  fn description(&self) -> &str {
-    &self.message
+  // Automatic conversions between this error chain and other
+  // error chains. In this case, it will e.g. generate an
+  // `ErrorKind` variant called `Dist` which in turn contains
+  // the `rustup_dist::ErrorKind`, with conversions from
+  // `rustup_dist::Error`.
+  //
+  // This section can be empty.
+  links {
   }
-}
 
-impl From<ConfigError> for BinsError {
-  fn from (e: ConfigError) -> Self {
-    let msg = format!("{}", e);
-    BinsError {
-      kind: BinsErrorKind::ConfigError(e),
-      message: format!("{}", msg)
-    }
+  // Automatic conversions between this error chain and other
+  // error types not defined by the `error_chain!`. These will be
+  // boxed as the error cause and wrapped in a new error with,
+  // in this case, the `ErrorKind::Temp` variant.
+  //
+  // This section can be empty.
+  foreign_links {
+    config::error::ConfigError, ConfigError, "configuration error";
+    io::Error, IoError, "I/O error";
   }
-}
 
-impl From<std::io::Error> for BinsError {
-  fn from(e: std::io::Error) -> Self {
-    let msg = format!("{}", e);
-    BinsError {
-      kind: BinsErrorKind::IoError(e),
-      message: format!("{}", msg)
-    }
+  // Define additional `ErrorKind` variants. The syntax here is
+  // the same as `quick_error!`, but the `from()` and `cause()`
+  // syntax is not supported.
+  errors {
   }
-}
-
-impl From<String> for BinsError {
-  fn from(e: String) -> Self {
-    BinsError {
-      kind: BinsErrorKind::None,
-      message: e
-    }
-  }
-}
-
-impl<'a> From<&'a str> for BinsError {
-  fn from(e: &'a str) -> Self {
-    BinsError {
-      kind: BinsErrorKind::None,
-      message: String::from(e)
-    }
-  }
-}
-
-#[derive(Debug)]
-pub enum BinsErrorKind {
-  None,
-  ConfigError(config::error::ConfigError),
-  IoError(std::io::Error)
 }

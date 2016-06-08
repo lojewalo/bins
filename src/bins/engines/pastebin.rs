@@ -1,3 +1,4 @@
+use bins::error::*;
 use bins::{Bins, PasteFile};
 use bins::engines::Engine;
 use hyper::client::Response;
@@ -28,7 +29,7 @@ struct PastebinUrlProducer { }
 
 impl ProducesUrl for PastebinUrlProducer {
   #[allow(unused_variables)]
-  fn produce_url(&self, bins: &Bins, res: Response, data: String) -> Result<String, String> {
+  fn produce_url(&self, bins: &Bins, res: Response, data: String) -> Result<String> {
     Ok(data)
   }
 }
@@ -36,10 +37,10 @@ impl ProducesUrl for PastebinUrlProducer {
 struct PastebinBodyProducer { }
 
 impl ProducesBody for PastebinBodyProducer {
-  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String, String> {
-    let api_key = some_or_err!(bins.config.lookup_str("pastebin.api_key"), String::from("no pastebin.api_key defined in configuration file"));
+  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String> {
+    let api_key = some_or_err!(bins.config.lookup_str("pastebin.api_key"), "no pastebin.api_key defined in configuration file".into());
     if api_key.is_empty() {
-      return Err(String::from("pastebin.api_key was empty"));
+      return Err("pastebin.api_key was empty".into());
     }
     Ok(
       form_urlencoded::Serializer::new(String::new())
@@ -54,7 +55,7 @@ impl ProducesBody for PastebinBodyProducer {
 }
 
 impl Engine for Pastebin {
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String, String> {
+  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
     self.batch_upload.upload(bins, data)
   }
 }
