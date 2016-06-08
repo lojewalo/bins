@@ -1,10 +1,10 @@
-use argparse::{ArgumentParser, Store, List, StoreTrue, StoreFalse, Print};
+use argparse::{ArgumentParser, Store, List, StoreTrue, StoreFalse, StoreOption, Print};
 use config::types::Config;
 
 pub struct Arguments {
   pub files: Vec<String>,
   pub message: String,
-  pub service: String,
+  pub service: Option<String>,
   pub private: bool,
   pub auth: bool
 }
@@ -13,7 +13,7 @@ pub fn get_arguments(config: &Config) -> Arguments {
   let mut arguments = Arguments {
     files: Vec::new(),
     message: String::from(""),
-    service: String::from(""),
+    service: config.lookup_str("defaults.service").map(|s| s.to_owned()),
     private: config.lookup_boolean_or("defaults.private", true),
     auth: config.lookup_boolean_or("default.auth", true)
   };
@@ -23,9 +23,15 @@ pub fn get_arguments(config: &Config) -> Arguments {
     ap.refer(&mut arguments.files)
       .add_argument("files", List, "files to paste")
       .required();
-    ap.refer(&mut arguments.service)
-      .add_option(&["-s", "--service"], Store, "pastebin service to use")
-      .required();
+    {
+      let service = &mut arguments.service;
+      let required = service.is_none();
+      let mut r = ap.refer(service);
+      r.add_option(&["-s", "--service"], StoreOption, "pastebin service to use");
+      if required {
+        r.required();
+      }
+    }
     ap.refer(&mut arguments.message)
       .add_option(&["-m", "--message"], Store, "message to paste");
     ap.refer(&mut arguments.private)

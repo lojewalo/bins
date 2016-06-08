@@ -20,6 +20,11 @@ r#"defaults = {
    * Using the command-line option `--auth` or `--anon` will change this behavior.
    */
   auth = true;
+  /*
+   * Uncomment this line if you want to set a default service to use with bins. This will make the `--service` option
+   * optional and use the configured service if the option is not specified.
+   */
+  # service = "";
 };
 
 gist = {

@@ -47,12 +47,16 @@ impl Bins {
   }
 
   pub fn get_engine(&self) -> Result<Box<Engine>> {
-    match self.arguments.service.to_lowercase().as_ref() {
+    let service = match self.arguments.service {
+      Some(ref s) => s,
+      None => return Err("no service was specified and no default service was set.".into())
+    };
+    match service.to_lowercase().as_ref() {
       "gist" => Ok(Box::new(Gist::new())),
       "hastebin" => Ok(Box::new(Hastebin::new())),
       "pastie" => Ok(Box::new(Pastie::new())),
       "pastebin" => Ok(Box::new(Pastebin::new())),
-      _ => Err(format!("unknown service \"{}\"", self.arguments.service).into())
+      _ => Err(format!("unknown service \"{}\"", service).into())
     }
   }
 
