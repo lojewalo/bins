@@ -116,7 +116,10 @@ impl Bins {
           return Err(res.err().unwrap().into());
         }
       }
-      let mut pastes = results.iter().cloned().map(|r| r.unwrap()).collect::<Vec<_>>();
+      let mut pastes = results.iter().cloned().map(|r| r.unwrap()).filter(|p| !p.data.trim().is_empty()).collect::<Vec<_>>();
+      if pastes.len() < 1 {
+        return Err("no files (or all empty files) to paste".into());
+      }
       self.handle_duplicate_file_names(&mut pastes);
       pastes
     } else {
