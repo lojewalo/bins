@@ -59,12 +59,12 @@ bins supports pasting multiple files, too. With services such as GitHub's [gist]
 
 ```
 $ bins -s gist hello.c goodbye.c 
-https://gist.github.com/fb4133ea56427d74604b361a0a84b53f
+https://gist.github.com/anonymous/7348da5d3f1cd8134d7cd6ee1cf5e84d
 ```
 
 ```
 $ bins -s pastie hello.c goodbye.c
-http://pastie.org/private/x3u62xmyam0i8hiyas8hg
+http://pastie.org/private/v9enoe4qbxgh6ivlazxmaa
 ```
 
 #### Specifying visibility options
