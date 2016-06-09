@@ -8,6 +8,8 @@
 
 ## Install
 
+**bins requires at least Rust 1.8.0.**
+
 ```sh
 git clone https://github.com/jkcclemens/bins
 cd bins
