@@ -102,8 +102,8 @@ impl Bins {
   pub fn get_to_paste(&self) -> Result<Vec<PasteFile>> {
     let arguments = &self.arguments;
     let message = &arguments.message;
-    let paste_files: Vec<PasteFile> = if !message.is_empty() {
-      vec![PasteFile::new(String::from("message"), message.to_owned())]
+    let paste_files: Vec<PasteFile> = if message.is_some() {
+      vec![PasteFile::new(String::from("message"), message.clone().unwrap())]
     } else if !arguments.files.is_empty() {
       let files = arguments.files.clone();
       let results = files.iter()
@@ -117,9 +117,6 @@ impl Bins {
         }
       }
       let mut pastes = results.iter().cloned().map(|r| r.unwrap()).filter(|p| !p.data.trim().is_empty()).collect::<Vec<_>>();
-      if pastes.len() < 1 {
-        return Err("no files (or all empty files) to paste".into());
-      }
       self.handle_duplicate_file_names(&mut pastes);
       pastes
     } else {
@@ -129,6 +126,9 @@ impl Bins {
       }
       vec![PasteFile::new(String::from("stdin"), buffer)]
     };
+    if paste_files.iter().filter(|p| !p.data.trim().is_empty()).count() < 1 {
+      return Err("no files (or all empty files) to paste".into());
+    }
     Ok(paste_files)
   }
 

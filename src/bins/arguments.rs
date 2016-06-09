@@ -1,9 +1,9 @@
-use argparse::{ArgumentParser, Store, List, StoreTrue, StoreFalse, StoreOption, Print};
+use argparse::{ArgumentParser, List, StoreTrue, StoreFalse, StoreOption, Print};
 use config::types::Config;
 
 pub struct Arguments {
   pub files: Vec<String>,
-  pub message: String,
+  pub message: Option<String>,
   pub service: Option<String>,
   pub private: bool,
   pub auth: bool
@@ -12,7 +12,7 @@ pub struct Arguments {
 pub fn get_arguments(config: &Config) -> Arguments {
   let mut arguments = Arguments {
     files: Vec::new(),
-    message: String::from(""),
+    message: None,
     service: config.lookup_str("defaults.service").map(|s| s.to_owned()),
     private: config.lookup_boolean_or("defaults.private", true),
     auth: config.lookup_boolean_or("default.auth", true)
@@ -33,7 +33,7 @@ pub fn get_arguments(config: &Config) -> Arguments {
       }
     }
     ap.refer(&mut arguments.message)
-      .add_option(&["-m", "--message"], Store, "message to paste");
+      .add_option(&["-m", "--message"], StoreOption, "message to paste");
     ap.refer(&mut arguments.private)
       .add_option(&["-p", "--private"], StoreTrue, "if the paste should be private")
       .add_option(&["-P", "--public"], StoreFalse, "if the paste should be public");
