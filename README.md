@@ -31,7 +31,7 @@ cargo install
 
 ## Video demo
 
-[![](https://lol768.com/i/cpRJD5heiu_-uA)](https://asciinema.org/a/48190)
+[![](https://asciinema.org/a/48288.png)](https://asciinema.org/a/48288)
 
 ## Usage
 
