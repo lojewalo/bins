@@ -42,7 +42,7 @@ pub fn get_arguments(config: &Config) -> Arguments {
       .add_option(&["-A", "--anon"], StoreFalse, "if pastes should be posted without authentication");
     ap.add_option(
       &["-l", "--list-services"],
-      Print(String::from("gist, hastebin, pastebin, pastie")),
+      Print(String::from("gist, hastebin, pastebin, pastie, sprunge")),
       "lists pastebin services available"
     );
     ap.parse_args_or_exit();

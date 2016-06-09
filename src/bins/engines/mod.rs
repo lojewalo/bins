@@ -2,6 +2,7 @@ pub mod gist;
 pub mod hastebin;
 pub mod pastie;
 pub mod pastebin;
+pub mod sprunge;
 mod indexed;
 
 use bins::error::*;
