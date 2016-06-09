@@ -9,6 +9,15 @@ pub struct Arguments {
   pub auth: bool
 }
 
+include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
+
+fn get_version() -> String {
+  let version = option_env!("CARGO_PKG_VERSION").unwrap_or("unknown_version").to_owned();
+  let git_tag = git_short_tag();
+  let name = option_env!("CARGO_PKG_NAME").unwrap_or("unknown_name").to_owned();
+  format!("{} {}{}", name, version, git_tag)
+}
+
 pub fn get_arguments(config: &Config) -> Arguments {
   let mut arguments = Arguments {
     files: Vec::new(),
@@ -45,6 +54,7 @@ pub fn get_arguments(config: &Config) -> Arguments {
       Print(String::from("gist, hastebin, pastebin, pastie, sprunge")),
       "lists pastebin services available"
     );
+    ap.add_option(&["-v", "--version"], Print(get_version()), "prints version and exits");
     ap.parse_args_or_exit();
   }
   arguments
