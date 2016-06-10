@@ -17,3 +17,6 @@ git = "https://github.com/servo/rust-url"
 [build-dependencies]
 git2 = "0.4.3"
 rustc_version = "0.1.7"
+
+[profile.release]
+lto = true
