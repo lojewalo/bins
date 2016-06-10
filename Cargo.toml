@@ -6,7 +6,7 @@ build = "build.rs"
 
 [dependencies]
 config = "0.1.3"
-argparse = "0.2.1"
+clap = "2.5.2"
 hyper = "0.9"
 rustc-serialize = "0.3.19"
 error-chain = "0.1.12"
@@ -19,4 +19,5 @@ git2 = "0.4.3"
 rustc_version = "0.1.7"
 
 [profile.release]
-lto = true
+# https://github.com/rust-lang/rust/issues/28233
+# lto = true

@@ -1,4 +1,5 @@
-use argparse::{ArgumentParser, List, StoreTrue, StoreFalse, StoreOption, Print};
+use std::process;
+use clap::{App, Arg};
 use config::types::Config;
 
 pub struct Arguments {
@@ -11,11 +12,14 @@ pub struct Arguments {
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
 
+fn get_name() -> String {
+  option_env!("CARGO_PKG_NAME").unwrap_or("unknown_name").to_owned()
+}
+
 fn get_version() -> String {
   let version = option_env!("CARGO_PKG_VERSION").unwrap_or("unknown_version").to_owned();
   let git_tag = git_short_tag();
-  let name = option_env!("CARGO_PKG_NAME").unwrap_or("unknown_name").to_owned();
-  format!("{} {}{}", name, version, git_tag)
+  format!("{}{}", version, git_tag)
 }
 
 pub fn get_arguments(config: &Config) -> Arguments {
@@ -26,36 +30,73 @@ pub fn get_arguments(config: &Config) -> Arguments {
     private: config.lookup_boolean_or("defaults.private", true),
     auth: config.lookup_boolean_or("default.auth", true)
   };
-  {
-    let mut ap = ArgumentParser::new();
-    ap.set_description("paste a file, string, or pipe to a pastebin");
-    ap.refer(&mut arguments.files)
-      .add_argument("files", List, "files to paste")
-      .required();
-    {
-      let service = &mut arguments.service;
-      let required = service.is_none();
-      let mut r = ap.refer(service);
-      r.add_option(&["-s", "--service"], StoreOption, "pastebin service to use");
-      if required {
-        r.required();
-      }
-    }
-    ap.refer(&mut arguments.message)
-      .add_option(&["-m", "--message"], StoreOption, "message to paste");
-    ap.refer(&mut arguments.private)
-      .add_option(&["-p", "--private"], StoreTrue, "if the paste should be private")
-      .add_option(&["-P", "--public"], StoreFalse, "if the paste should be public");
-    ap.refer(&mut arguments.auth)
-      .add_option(&["-a", "--auth"], StoreTrue, "if authentication (like api keys and tokens) should be used")
-      .add_option(&["-A", "--anon"], StoreFalse, "if pastes should be posted without authentication");
-    ap.add_option(
-      &["-l", "--list-services"],
-      Print(String::from("gist, hastebin, pastebin, pastie, sprunge")),
-      "lists pastebin services available"
-    );
-    ap.add_option(&["-v", "--version"], Print(get_version()), "prints version and exits");
-    ap.parse_args_or_exit();
+  let name = get_name();
+  let version = get_version();
+  let res = App::new(name.as_ref())
+    .version(version.as_ref())
+    .about("A command-line pastebin client")
+    .arg(Arg::with_name("files")
+         .help("files to paste")
+         .takes_value(true)
+         .multiple(true))
+    .arg(Arg::with_name("message")
+         .short("m")
+         .long("message")
+         .help("message to paste")
+         .use_delimiter(false)
+         .takes_value(true))
+    .arg(Arg::with_name("private")
+         .short("p")
+         .long("private")
+         .help("if the paste should be private")
+         .conflicts_with("public"))
+    .arg(Arg::with_name("public")
+         .short("P")
+         .long("public")
+         .help("if the paste should be public"))
+    .arg(Arg::with_name("auth")
+         .short("a")
+         .long("auth")
+         .help("if authentication (like api keys and tokens) should be used")
+         .conflicts_with("anon"))
+    .arg(Arg::with_name("anon")
+         .short("A")
+         .long("anon")
+         .help("if pastes should be posted without authentication"))
+    .arg(Arg::with_name("service")
+         .short("s")
+         .long("service")
+         .help("pastebin service to use")
+         .takes_value(true)
+         .required(arguments.service.is_none()))
+    .arg(Arg::with_name("list-services")
+         .short("l")
+         .long("list-services")
+         .help("lists available bins and exits")
+         .conflicts_with_all(&["files", "message", "private", "public", "auth", "anon", "service"]))
+    .get_matches();
+  if res.is_present("list-services") {
+    println!("gist\nhastebin\npastebin\npastie\nsprunge");
+    process::exit(0);
+  }
+  if let Some(files) = res.values_of("files") {
+    arguments.files = files.map(|s| s.to_owned()).collect();
+  }
+  if let Some(message) = res.value_of("message") {
+    arguments.message = Some(message.to_owned());
+  }
+  if let Some(service) = res.value_of("service") {
+    arguments.service = Some(service.to_owned());
+  }
+  if res.is_present("private") {
+    arguments.private = true;
+  } else if res.is_present("public") {
+    arguments.private = false;
+  }
+  if res.is_present("anon") {
+    arguments.auth = false;
+  } else if res.is_present("auth") {
+    arguments.auth = true;
   }
   arguments
 }

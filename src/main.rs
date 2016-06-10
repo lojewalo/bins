@@ -1,5 +1,5 @@
 extern crate config;
-extern crate argparse;
+extern crate clap;
 extern crate hyper;
 extern crate rustc_serialize;
 extern crate url;
