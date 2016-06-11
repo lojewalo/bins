@@ -125,7 +125,9 @@ impl Engine for Gist {
       return Err("gist had no files".into());
     }
     if keys.len() > 1 && target_file.is_none() {
-      return Err("gist had more than one file, but no target file was specified".into());
+      let file_names = keys.iter().map(|s| String::from("  ") + s).collect::<Vec<_>>().join("\n");
+      let message = format!("gist had more than one file, but no target file was specified\n\nfiles available:\n{}", file_names);
+      return Err(message.into());
     }
     let target = target_file.unwrap_or(&keys[0]).to_lowercase();
     if !keys.contains(&target) {
