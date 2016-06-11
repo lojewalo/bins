@@ -21,6 +21,11 @@ cargo install
 
 Add `$HOME/.cargo/bin` to your `$PATH` or move `$HOME/.cargo/bin/bins` to `/usr/local/bin`.
 
+### x11/clipboard (Linux-only)
+
+If you are in an environment without `x11`, use `cargo install --no-default-features` to disable clipboard support for
+bins. If clipboard support is enabled, which it is by default, your build will fail without `x11`!
+
 ## Upgrade
 
 To upgrade an existing installation:
