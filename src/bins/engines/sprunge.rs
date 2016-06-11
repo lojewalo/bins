@@ -26,8 +26,7 @@ impl Sprunge {
 struct SprungeUrlProducer { }
 
 impl ProducesUrl for SprungeUrlProducer {
-  #[allow(unused_variables)]
-  fn produce_url(&self, bins: &Bins, res: Response, data: String) -> Result<String> {
+  fn produce_url(&self, _: &Bins, _: Response, data: String) -> Result<String> {
     Ok(data)
   }
 }
@@ -35,8 +34,7 @@ impl ProducesUrl for SprungeUrlProducer {
 struct SprungeBodyProducer { }
 
 impl ProducesBody for SprungeBodyProducer {
-  #[allow(unused_variables)]
-  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String> {
+  fn produce_body(&self, _: &Bins, data: &PasteFile) -> Result<String> {
     Ok(
       form_urlencoded::Serializer::new(String::new())
         .append_pair("sprunge", &data.data)
