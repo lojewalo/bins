@@ -44,7 +44,7 @@ impl ProducesBody for SprungeBodyProducer {
 }
 
 impl Engine for Sprunge {
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
+  fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
   }
 }

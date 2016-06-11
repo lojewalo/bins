@@ -13,7 +13,7 @@ pub struct Pastie {
 impl Pastie {
   pub fn new() -> Self {
     let mut headers = Headers::new();
-    &headers.set(ContentType::form_url_encoded());
+    headers.set(ContentType::form_url_encoded());
     Pastie {
       indexed_upload: IndexedUpload {
         url: String::from("http://pastie.org/pastes"),
@@ -48,7 +48,7 @@ impl ProducesBody for PastieBodyProducer {
 }
 
 impl Engine for Pastie {
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
+  fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
   }
 }

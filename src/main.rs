@@ -12,7 +12,6 @@ use bins::error::*;
 use bins::Bins;
 use bins::arguments;
 use bins::configuration::{BinsConfiguration, Configurable};
-use bins::engines::Engine;
 
 macro_rules! or_exit {
     ($expr: expr) => { match $expr { Ok(x) => x, Err(e) => { for err in e.iter() { println!("{}", err); } return 1; } } };

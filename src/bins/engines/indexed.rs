@@ -25,7 +25,7 @@ pub trait ProducesBody {
 pub trait UploadsIndices {
   fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String>;
 
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
+  fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     if data.len() < 2 {
       return self.real_upload(bins, &data[0]);
     }
@@ -47,13 +47,13 @@ pub trait UploadsIndices {
     Ok(index_url)
   }
 
-  fn generate_index(&self, data: &Vec<PasteFile>) -> String {
+  fn generate_index(&self, data: &[PasteFile]) -> String {
     let header = format!("{} files", data.len());
     let separator = Self::repeat_str("-", header.len());
     let mut body = String::from("");
     for (i, file) in data.iter().enumerate() {
       let number = i + 1;
-      &body.push_str(&format!("{number}. {name}: <url{number}>\n", number = number, name = file.name));
+      body.push_str(&format!("{number}. {name}: <url{number}>\n", number = number, name = file.name));
     }
     header + "\n" + &separator + "\n\n" + &body
   }

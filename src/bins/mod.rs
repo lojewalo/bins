@@ -97,7 +97,7 @@ impl Bins {
         };
         Ok(PasteFile::new(n.to_string_lossy().into_owned(), s))
       },
-      Err(s) => return Err(s)
+      Err(s) => Err(s)
     }
   }
 
@@ -139,12 +139,12 @@ impl Bins {
     for mut paste in pastes {
       let name = paste.name.clone();
       if names_map.contains_key(&name) {
-        let parts = name.rsplit(".");
+        let parts = name.rsplit('.');
         let (beginning, end) = if parts.clone().count() > 1 {
           let mut beginning_parts = parts.clone().skip(1).collect::<Vec<_>>();
           beginning_parts.reverse();
           let beginning = beginning_parts.join(".");
-          let end = parts.take(1).next().map(|s| String::from(".") + s).unwrap_or(String::from(""));
+          let end = parts.take(1).next().map_or(String::new(), |s| String::from(".") + s);
           (beginning, end)
         } else {
           (name.clone(), String::from(""))

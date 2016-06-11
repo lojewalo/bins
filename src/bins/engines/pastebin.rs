@@ -13,7 +13,7 @@ pub struct Pastebin {
 impl Pastebin {
   pub fn new() -> Self {
     let mut headers = Headers::new();
-    &headers.set(ContentType::form_url_encoded());
+    headers.set(ContentType::form_url_encoded());
     Pastebin {
       indexed_upload: IndexedUpload {
         url: String::from("http://pastebin.com/api/api_post.php"),
@@ -44,7 +44,7 @@ impl ProducesBody for PastebinBodyProducer {
     Ok(
       form_urlencoded::Serializer::new(String::new())
         .append_pair("api_option", "paste")
-        .append_pair("api_dev_key", &api_key)
+        .append_pair("api_dev_key", api_key)
         .append_pair("api_paste_private", if bins.arguments.private { "1" } else { "0" })
         .append_pair("api_paste_code", &data.data)
         .append_pair("api_paste_name", &data.name)
@@ -54,7 +54,7 @@ impl ProducesBody for PastebinBodyProducer {
 }
 
 impl Engine for Pastebin {
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
+  fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
   }
 }

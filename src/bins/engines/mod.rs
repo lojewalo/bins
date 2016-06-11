@@ -10,5 +10,5 @@ use bins::PasteFile;
 use bins::Bins;
 
 pub trait Engine {
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String>;
+  fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String>;
 }

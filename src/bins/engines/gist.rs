@@ -20,12 +20,12 @@ impl GistUpload {
     let map = HashMap::new();
     GistUpload {
       files: map,
-      description: description.unwrap_or(String::from("")),
+      description: description.unwrap_or_else(String::new),
       public: public
     }
   }
 
-  fn from(bins: &Bins, files: &Vec<PasteFile>) -> Self {
+  fn from(bins: &Bins, files: &[PasteFile]) -> Self {
     let mut gist = GistUpload::new(None, !bins.arguments.private);
     for file in files {
       gist.files.insert(file.name.clone(), GistFile::from(file.data.clone()));
@@ -54,7 +54,7 @@ impl Gist {
 }
 
 impl Engine for Gist {
-  fn upload(&self, bins: &Bins, data: &Vec<PasteFile>) -> Result<String> {
+  fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     let upload = GistUpload::from(bins, data);
     let j = try!(json::encode(&upload).map_err(|e| e.to_string()));
     let client = Client::new();
