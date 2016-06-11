@@ -60,7 +60,7 @@ impl Engine for Pastebin {
     self.indexed_upload.upload(bins, data)
   }
 
-  fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String> {
+  fn get_raw(&self, _: &Bins, url: &mut Url) -> Result<String> {
     let new_path = { String::from("/download") + url.path() };
     url.set_path(&new_path);
     let mut headers = Headers::new();

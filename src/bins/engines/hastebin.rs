@@ -52,7 +52,7 @@ impl Engine for Hastebin {
     self.indexed_upload.upload(bins, data)
   }
 
-  fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String> {
+  fn get_raw(&self, _: &Bins, url: &mut Url) -> Result<String> {
     let new_path = {
       String::from("/raw") + url.path().split('.').collect::<Vec<_>>()[0]
     };
