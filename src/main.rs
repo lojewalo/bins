@@ -32,10 +32,8 @@ fn make_bins() -> Result<Bins> {
 
 fn inner() -> i32 {
   let bins = or_exit!(make_bins());
-  let to_paste = or_exit!(bins.get_to_paste());
-  let engine = or_exit!(bins.get_engine());
-  let url = or_exit!(engine.upload(&bins, &to_paste));
-  println!("{}", url);
+  let output = or_exit!(bins.get_output());
+  println!("{}", output);
   0
 }
 

@@ -1,5 +1,6 @@
 use config;
 use std::io;
+use hyper;
 
 error_chain! {
   // The type defined for this error. These are the conventional
@@ -27,6 +28,7 @@ error_chain! {
   foreign_links {
     config::error::ConfigError, ConfigError, "configuration error";
     io::Error, IoError, "I/O error";
+    hyper::Error, HyperError, "connection error";
   }
 
   // Define additional `ErrorKind` variants. The syntax here is

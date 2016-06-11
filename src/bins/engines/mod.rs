@@ -8,7 +8,10 @@ mod indexed;
 use bins::error::*;
 use bins::PasteFile;
 use bins::Bins;
+use hyper::Url;
 
 pub trait Engine {
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String>;
+
+  fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String>;
 }

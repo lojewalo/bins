@@ -21,6 +21,7 @@ use bins::engines::hastebin::Hastebin;
 use bins::engines::pastie::Pastie;
 use bins::engines::pastebin::Pastebin;
 use bins::engines::sprunge::Sprunge;
+use hyper::Url;
 
 #[derive(Clone)]
 pub struct PasteFile {
@@ -155,5 +156,40 @@ impl Bins {
       }
       names_map.entry(name.clone()).or_insert(1);
     }
+  }
+
+  fn get_engine_for_url(&self, url: &Url) -> Result<Box<Engine>> {
+    let domain = match url.domain() {
+      Some(d) => d,
+      None => return Err("input url had no domain".into())
+    };
+    let engine: Box<Engine> = match domain {
+      "gist.github.com" => Box::new(Gist::new()),
+      "hastebin.com" => Box::new(Hastebin::new()),
+      "pastebin.com" => Box::new(Pastebin::new()),
+      "pastie.org" => Box::new(Pastie::new()),
+      "sprunge.us" => Box::new(Sprunge::new()),
+      _ => return Err(format!("could not find a bin for domain {}", domain).into())
+    };
+    Ok(engine)
+  }
+
+  fn get_raw(&self, url_string: &String) -> Result<String> {
+    // can't use try!() because url::parser is private, and ParseError is at url::parser::ParseError
+    let mut url = match Url::parse(url_string.as_ref()) {
+      Ok(u) => u,
+      Err(e) => return Err(e.to_string().into())
+    };
+    let engine = try!(self.get_engine_for_url(&url));
+    engine.get_raw(self, &mut url)
+  }
+
+  pub fn get_output(&self) -> Result<String> {
+    if let Some(ref input) = self.arguments.input {
+      return self.get_raw(input);
+    }
+    let to_paste = try!(self.get_to_paste());
+    let engine = try!(self.get_engine());
+    engine.upload(self, &to_paste)
   }
 }

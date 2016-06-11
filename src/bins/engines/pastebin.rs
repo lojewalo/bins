@@ -3,7 +3,9 @@ use bins::{Bins, PasteFile};
 use bins::engines::Engine;
 use hyper::client::Response;
 use bins::engines::indexed::{IndexedUpload, UploadsIndices, ProducesUrl, ProducesBody};
-use hyper::header::{Headers, ContentType};
+use bins::engines::indexed::{IndexedDownload, DownloadsFile};
+use hyper::header::{Headers, ContentType, Referer};
+use hyper::Url;
 use url::form_urlencoded;
 
 pub struct Pastebin {
@@ -56,5 +58,18 @@ impl ProducesBody for PastebinBodyProducer {
 impl Engine for Pastebin {
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
+  }
+
+  fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String> {
+    let new_path = { String::from("/download") + url.path() };
+    url.set_path(&new_path);
+    let mut headers = Headers::new();
+    headers.set(Referer(url.as_str().to_owned()));
+    let download = IndexedDownload {
+      url: String::from(url.as_str()),
+      headers: headers,
+      target: None
+    };
+    download.download()
   }
 }

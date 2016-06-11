@@ -3,7 +3,9 @@ use bins::{Bins, PasteFile};
 use bins::engines::Engine;
 use hyper::client::Response;
 use bins::engines::indexed::{IndexedUpload, UploadsIndices, ProducesUrl, ProducesBody};
+use bins::engines::indexed::{IndexedDownload, DownloadsFile};
 use hyper::header::{Headers, ContentType};
+use hyper::Url;
 use url::form_urlencoded;
 
 pub struct Pastie {
@@ -50,5 +52,27 @@ impl ProducesBody for PastieBodyProducer {
 impl Engine for Pastie {
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
+  }
+
+  fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String> {
+    let new_path = {
+      let path = url.path();
+      if path.starts_with("/private") {
+        return Err("pastie private pastes are not supported in input mode".into());
+      }
+      let path_segments = some_or_err!(url.path_segments(), "could not get path for url".into());
+      if path_segments.count() > 1 {
+        format!("{}/download", path)
+      } else {
+        format!("/pastes{}/download", path)
+      }
+    };
+    url.set_path(&new_path);
+    let download = IndexedDownload {
+      url: String::from(url.as_str()),
+      headers: Headers::new(),
+      target: None
+    };
+    download.download()
   }
 }

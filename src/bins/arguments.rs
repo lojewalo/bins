@@ -7,7 +7,8 @@ pub struct Arguments {
   pub message: Option<String>,
   pub service: Option<String>,
   pub private: bool,
-  pub auth: bool
+  pub auth: bool,
+  pub input: Option<String>
 }
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
@@ -28,7 +29,8 @@ pub fn get_arguments(config: &Config) -> Arguments {
     message: None,
     service: config.lookup_str("defaults.service").map(|s| s.to_owned()),
     private: config.lookup_boolean_or("defaults.private", true),
-    auth: config.lookup_boolean_or("default.auth", true)
+    auth: config.lookup_boolean_or("default.auth", true),
+    input: None
   };
   let name = get_name();
   let version = get_version();
@@ -73,7 +75,12 @@ pub fn get_arguments(config: &Config) -> Arguments {
          .short("l")
          .long("list-services")
          .help("lists available bins and exits")
-         .conflicts_with_all(&["files", "message", "private", "public", "auth", "anon", "service"]))
+         .conflicts_with_all(&["files", "message", "private", "public", "auth", "anon", "service", "input"]))
+    .arg(Arg::with_name("input")
+         .short("i")
+         .long("input")
+         .takes_value(true)
+         .conflicts_with_all(&["auth", "anon", "public", "private", "message", "service"]))
     .get_matches();
   if res.is_present("list-services") {
     println!("gist\nhastebin\npastebin\npastie\nsprunge");
@@ -87,6 +94,9 @@ pub fn get_arguments(config: &Config) -> Arguments {
   }
   if let Some(service) = res.value_of("service") {
     arguments.service = Some(service.to_owned());
+  }
+  if let Some(input) = res.value_of("input") {
+    arguments.input = Some(input.to_owned());
   }
   if res.is_present("private") {
     arguments.private = true;

@@ -83,3 +83,26 @@ impl UploadsIndices for IndexedUpload {
     self.url_producer.as_ref().produce_url(bins, res, s)
   }
 }
+
+pub struct IndexedDownload {
+  pub url: String,
+  pub headers: Headers,
+  pub target: Option<String>
+}
+
+pub trait DownloadsFile {
+  fn download(&self) -> Result<String>;
+}
+
+impl DownloadsFile for IndexedDownload {
+  fn download(&self) -> Result<String> {
+    let client = Client::new();
+    let mut res = try!(client.get(&self.url).headers(self.headers.clone()).send());
+    if res.status != StatusCode::Ok {
+      return Err(format!("status was not ok: {}", res.status).into());
+    }
+    let mut s = String::from("");
+    try!(res.read_to_string(&mut s));
+    Ok(s)
+  }
+}
