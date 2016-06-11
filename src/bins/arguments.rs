@@ -79,6 +79,7 @@ pub fn get_arguments(config: &Config) -> Arguments {
     .arg(Arg::with_name("input")
          .short("i")
          .long("input")
+         .help("displays raw contents of input paste")
          .takes_value(true)
          .conflicts_with_all(&["auth", "anon", "public", "private", "message", "service"]))
     .get_matches();
