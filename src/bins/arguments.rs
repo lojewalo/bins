@@ -24,6 +24,26 @@ fn get_version() -> String {
   format!("{}{}", version, git_tag)
 }
 
+#[cfg(feature = "clipboard_support")]
+fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
+  vec![
+    Arg::with_name("copy")
+         .short("C")
+         .long("copy")
+         .help("copies the output of the command to the clipboard without a newline")
+         .conflicts_with("no-copy"),
+    Arg::with_name("no-copy")
+         .short("c")
+         .long("no-copy")
+         .help("does not copy the output of the command to the clipboard")
+  ]
+}
+
+#[cfg(not(feature = "clipboard_support"))]
+fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
+  vec![]
+}
+
 pub fn get_arguments(config: &Config) -> Arguments {
   let mut arguments = Arguments {
     files: Vec::new(),
@@ -36,7 +56,7 @@ pub fn get_arguments(config: &Config) -> Arguments {
   };
   let name = get_name();
   let version = get_version();
-  let res = App::new(name.as_ref())
+  let mut app = App::new(name.as_ref())
     .version(version.as_ref())
     .about("A command-line pastebin client")
     .arg(Arg::with_name("files")
@@ -83,17 +103,11 @@ pub fn get_arguments(config: &Config) -> Arguments {
          .long("input")
          .help("displays raw contents of input paste")
          .takes_value(true)
-         .conflicts_with_all(&["auth", "anon", "public", "private", "message", "service"]))
-    .arg(Arg::with_name("copy")
-         .short("C")
-         .long("copy")
-         .help("copies the output of the command to the clipboard without a newline")
-         .conflicts_with("no-copy"))
-    .arg(Arg::with_name("no-copy")
-         .short("c")
-         .long("no-copy")
-         .help("does not copy the output of the command to the clipboard"))
-    .get_matches();
+         .conflicts_with_all(&["auth", "anon", "public", "private", "message", "service"]));
+  for arg in get_clipboard_args() {
+    app = app.arg(arg);
+  }
+  let res = app.get_matches();
   if res.is_present("list-services") {
     println!("gist\nhastebin\npastebin\npastie\nsprunge");
     process::exit(0);

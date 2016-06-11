@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["Kyle Clemens <jkc.clemens@gmail.com>"]
 build = "build.rs"
 
+[features]
+default = ["clipboard_support"]
+clipboard_support = ["clipboard"]
+
 [dependencies]
 config = "0.1.3"
 clap = "2.5.2"
@@ -11,7 +15,7 @@ hyper = "0.9"
 rustc-serialize = "0.3.19"
 error-chain = "0.1.12"
 url = { git = "https://github.com/servo/rust-url" }
-clipboard = { git = "https://github.com/aweinstock314/rust-clipboard" }
+clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", optional = true }
 
 [build-dependencies]
 git2 = "0.4.3"
