@@ -12,9 +12,15 @@ use bins::error::*;
 use bins::Bins;
 use bins::arguments;
 use bins::configuration::{BinsConfiguration, Configurable};
+use std::io::Write;
+
+macro_rules! println_stderr {
+  ($fmt:expr) => { { writeln!(std::io::stderr(), $fmt).expect("error writing to stderr"); } };
+  ($fmt:expr, $($arg:tt)*) => { { writeln!(std::io::stderr(), $fmt, $($arg)*).expect("error writing to stderr"); } };
+}
 
 macro_rules! or_exit {
-    ($expr: expr) => { match $expr { Ok(x) => x, Err(e) => { for err in e.iter() { println!("{}", err); } return 1; } } };
+  ($expr: expr) => { match $expr { Ok(x) => x, Err(e) => { for err in e.iter() { println_stderr!("{}", err); } return 1; } } };
 }
 
 fn make_bins() -> Result<Bins> {
