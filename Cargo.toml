@@ -10,9 +10,8 @@ clap = "2.5.2"
 hyper = "0.9"
 rustc-serialize = "0.3.19"
 error-chain = "0.1.12"
-
-[dependencies.url]
-git = "https://github.com/servo/rust-url"
+url = { git = "https://github.com/servo/rust-url" }
+clipboard = { git = "https://github.com/aweinstock314/rust-clipboard" }
 
 [build-dependencies]
 git2 = "0.4.3"

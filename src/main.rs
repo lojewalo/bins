@@ -5,6 +5,7 @@ extern crate rustc_serialize;
 extern crate url;
 #[macro_use]
 extern crate error_chain;
+extern crate clipboard;
 
 mod bins;
 
@@ -13,6 +14,7 @@ use bins::Bins;
 use bins::arguments;
 use bins::configuration::{BinsConfiguration, Configurable};
 use std::io::Write;
+use clipboard::ClipboardContext;
 
 macro_rules! println_stderr {
   ($fmt:expr) => { { writeln!(std::io::stderr(), $fmt).expect("error writing to stderr"); } };
@@ -30,9 +32,17 @@ fn make_bins() -> Result<Bins> {
   Ok(Bins::new(config, arguments))
 }
 
+fn copy_to_clipboard(ref data: &String) -> Result<()> {
+  let mut clipboard = try!(ClipboardContext::new().map_err(|e| e.to_string()));
+  clipboard.set_contents(data.clone().to_owned()).map_err(|e| e.to_string().into())
+}
+
 fn inner() -> i32 {
   let bins = or_exit!(make_bins());
   let output = or_exit!(bins.get_output());
+  if bins.arguments.copy {
+    or_exit!(copy_to_clipboard(&output));
+  }
   println!("{}", output);
   0
 }

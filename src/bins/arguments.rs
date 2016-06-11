@@ -8,6 +8,7 @@ pub struct Arguments {
   pub service: Option<String>,
   pub private: bool,
   pub auth: bool,
+  pub copy: bool,
   pub input: Option<String>
 }
 
@@ -30,6 +31,7 @@ pub fn get_arguments(config: &Config) -> Arguments {
     service: config.lookup_str("defaults.service").map(|s| s.to_owned()),
     private: config.lookup_boolean_or("defaults.private", true),
     auth: config.lookup_boolean_or("default.auth", true),
+    copy: config.lookup_boolean_or("default.copy", false),
     input: None
   };
   let name = get_name();
@@ -82,6 +84,15 @@ pub fn get_arguments(config: &Config) -> Arguments {
          .help("displays raw contents of input paste")
          .takes_value(true)
          .conflicts_with_all(&["auth", "anon", "public", "private", "message", "service"]))
+    .arg(Arg::with_name("copy")
+         .short("C")
+         .long("copy")
+         .help("copies the output of the command to the clipboard without a newline")
+         .conflicts_with("no-copy"))
+    .arg(Arg::with_name("no-copy")
+         .short("c")
+         .long("no-copy")
+         .help("does not copy the output of the command to the clipboard"))
     .get_matches();
   if res.is_present("list-services") {
     println!("gist\nhastebin\npastebin\npastie\nsprunge");
@@ -108,6 +119,11 @@ pub fn get_arguments(config: &Config) -> Arguments {
     arguments.auth = false;
   } else if res.is_present("auth") {
     arguments.auth = true;
+  }
+  if res.is_present("copy") {
+    arguments.copy = true;
+  } else if res.is_present("no-copy") {
+    arguments.copy = false;
   }
   arguments
 }
