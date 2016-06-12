@@ -1,7 +1,7 @@
 extern crate config;
 
 use std::io::prelude::*;
-use std::fs::File;
+use std::fs::{self, File};
 use std::path::PathBuf;
 use std::env;
 use config::types::Config;
@@ -64,13 +64,28 @@ impl BinsConfiguration {
 pub trait Configurable {
   fn parse_config(&self) -> Result<Config>;
 
-  fn get_config_path(&self) -> Option<PathBuf> {
+  fn get_config_paths(&self) -> Vec<PathBuf> {
+    let mut paths: Vec<PathBuf> = vec![];
+    if let Ok(dir) = env::var("XDG_CONFIG_DIR") {
+      let mut xdg = PathBuf::from(dir);
+      xdg.push("bins.cfg");
+      paths.push(xdg);
+    }
     let mut home = match env::home_dir() {
       Some(p) => p,
-      None => return None
+      None => return paths
     };
+    let mut dot_config = home.clone();
+    dot_config.push(".config");
+    dot_config.push("bins.cfg");
+    paths.push(dot_config);
     home.push(".bins.cfg");
-    Some(home)
+    paths.push(home);
+    paths
+  }
+
+  fn get_config_path(&self) -> Option<PathBuf> {
+    self.get_config_paths().into_iter().find(|p| p.exists())
   }
 }
 
@@ -78,7 +93,14 @@ impl Configurable for BinsConfiguration {
   fn parse_config(&self) -> Result<Config> {
     let path = match self.get_config_path() {
       Some(p) => p,
-      None => return Err("could not get path to the configuration file".into())
+      None => {
+        let config_paths = self.get_config_paths();
+        let priority = some_or_err!(config_paths.first(), "no possible config paths computed".into());
+        let parent = some_or_err!(priority.parent(), "config file path had no parent".into());
+        let parent_str = some_or_err!(parent.to_str(), "config file path parent could not be converted to string".into());
+        try!(fs::create_dir_all(parent_str));
+        priority.to_path_buf()
+      }
     };
     if !&path.exists() {
       let mut file = try!(File::create(&path));
