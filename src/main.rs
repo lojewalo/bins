@@ -34,9 +34,9 @@ fn make_bins() -> Result<Bins> {
 }
 
 #[cfg(feature = "clipboard_support")]
-fn copy_to_clipboard(ref data: &String) -> Result<()> {
+fn copy_to_clipboard(data: &str) -> Result<()> {
   let mut clipboard = try!(ClipboardContext::new().map_err(|e| e.to_string()));
-  clipboard.set_contents(data.clone().to_owned()).map_err(|e| e.to_string().into())
+  clipboard.set_contents((*data).to_owned()).map_err(|e| e.to_string().into())
 }
 
 #[cfg(not(feature = "clipboard_support"))]
