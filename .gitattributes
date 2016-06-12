@@ -1,0 +1,4 @@
+text eol=lf
+*.rs text
+*.toml text
+binaries/bins-* filter=lfs diff=lfs merge=lfs -text
