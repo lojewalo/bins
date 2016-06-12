@@ -174,7 +174,7 @@ impl Bins {
     Ok(engine)
   }
 
-  fn get_raw(&self, url_string: &String) -> Result<String> {
+  fn get_raw(&self, url_string: &str) -> Result<String> {
     // can't use try!() because url::parser is private, and ParseError is at url::parser::ParseError
     let mut url = match Url::parse(url_string.as_ref()) {
       Ok(u) => u,
