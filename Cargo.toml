@@ -9,7 +9,7 @@ default = ["clipboard_support"]
 clipboard_support = ["clipboard"]
 
 [dependencies]
-config = "0.1.3"
+toml = "0.1.30"
 clap = "2.5.2"
 hyper = "0.9"
 rustc-serialize = "0.3.19"

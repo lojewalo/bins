@@ -1,4 +1,4 @@
-extern crate config;
+extern crate toml;
 extern crate clap;
 extern crate hyper;
 extern crate rustc_serialize;
@@ -40,7 +40,7 @@ fn copy_to_clipboard(data: &str) -> Result<()> {
 }
 
 #[cfg(not(feature = "clipboard_support"))]
-fn copy_to_clipboard(_: &String) -> Result<()> {
+fn copy_to_clipboard(_: &str) -> Result<()> {
   Ok(())
 }
 

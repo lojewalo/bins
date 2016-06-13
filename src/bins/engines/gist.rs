@@ -2,6 +2,7 @@ use bins::error::*;
 use bins::{Bins, PasteFile};
 use bins::engines::Engine;
 use bins::engines::indexed::{IndexedDownload, DownloadsFile};
+use bins::configuration::BetterLookups;
 use hyper::client::Client;
 use hyper::header::{Headers, ContentType, UserAgent, Authorization, Basic};
 use hyper::status::StatusCode;

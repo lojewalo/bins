@@ -1,4 +1,4 @@
-use config;
+use toml;
 use std::io;
 use hyper;
 
@@ -26,7 +26,7 @@ error_chain! {
   //
   // This section can be empty.
   foreign_links {
-    config::error::ConfigError, ConfigError, "configuration error";
+    toml::ParserError, ParserError, "configuration parse error";
     io::Error, IoError, "I/O error";
     hyper::Error, HyperError, "connection error";
   }

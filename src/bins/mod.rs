@@ -6,13 +6,13 @@ pub mod configuration;
 pub mod engines;
 
 extern crate std;
-extern crate config;
+extern crate toml;
 
 use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
 use std::collections::HashMap;
-use config::types::Config;
+use toml::Value;
 use bins::error::*;
 use bins::arguments::Arguments;
 use bins::engines::Engine;
@@ -36,12 +36,12 @@ impl PasteFile {
 }
 
 pub struct Bins {
-  pub config: Config,
+  pub config: Value,
   pub arguments: Arguments
 }
 
 impl Bins {
-  pub fn new(config: Config, arguments: Arguments) -> Self {
+  pub fn new(config: Value, arguments: Arguments) -> Self {
     Bins {
       config: config,
       arguments: arguments

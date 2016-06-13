@@ -4,6 +4,7 @@ use bins::engines::Engine;
 use hyper::client::Response;
 use bins::engines::indexed::{IndexedUpload, UploadsIndices, ProducesUrl, ProducesBody};
 use bins::engines::indexed::{IndexedDownload, DownloadsFile};
+use bins::configuration::BetterLookups;
 use hyper::header::{Headers, ContentType, Referer};
 use hyper::Url;
 use url::form_urlencoded;

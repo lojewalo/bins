@@ -1,6 +1,7 @@
 use std::process;
 use clap::{App, Arg};
-use config::types::Config;
+use toml::Value;
+use bins::configuration::BetterLookups;
 
 pub struct Arguments {
   pub files: Vec<String>,
@@ -44,14 +45,14 @@ fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
   vec![]
 }
 
-pub fn get_arguments(config: &Config) -> Arguments {
+pub fn get_arguments(config: &Value) -> Arguments {
   let mut arguments = Arguments {
     files: Vec::new(),
     message: None,
     service: config.lookup_str("defaults.service").map(|s| s.to_owned()),
-    private: config.lookup_boolean_or("defaults.private", true),
-    auth: config.lookup_boolean_or("default.auth", true),
-    copy: config.lookup_boolean_or("default.copy", false),
+    private: config.lookup_bool_or("defaults.private", true),
+    auth: config.lookup_bool_or("defaults.auth", true),
+    copy: config.lookup_bool_or("defaults.copy", false),
     input: None
   };
   let name = get_name();
