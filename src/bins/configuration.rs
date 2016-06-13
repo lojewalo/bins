@@ -85,8 +85,6 @@ pub trait Configurable {
 
   fn get_default_config(&self) -> Result<Value>;
 
-  fn update_config_with_defaults(&self) -> Result<()>;
-
   fn get_config_paths(&self) -> Vec<PathBuf> {
     let mut paths: Vec<PathBuf> = vec![];
     if let Ok(dir) = env::var("XDG_CONFIG_DIR") {
@@ -145,9 +143,5 @@ impl Configurable for BinsConfiguration {
       Ok(v) => Ok(v),
       Err(e) => Err(e.into_iter().next().map_or("could not parse default config".to_owned(), |e| e.to_string()).into())
     }
-  }
-
-  fn update_config_with_defaults(&self) -> Result<()> {
-    unimplemented!();
   }
 }
