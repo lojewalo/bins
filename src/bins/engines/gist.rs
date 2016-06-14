@@ -120,7 +120,7 @@ impl Engine for Gist {
       return Err("status was not ok".into());
     }
     let gist_upload: GistUpload = try!(json::decode(&s));
-    let files = gist_upload.files;
+    let files: HashMap<String, &GistFile> = gist_upload.files.iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
     if files.len() < 1 {
       return Err("gist had no files".into());
     }
