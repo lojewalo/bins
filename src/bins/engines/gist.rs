@@ -45,7 +45,10 @@ struct GistFile {
 
 impl From<String> for GistFile {
   fn from(string: String) -> Self {
-    GistFile { content: string, raw_url: None }
+    GistFile {
+      content: string,
+      raw_url: None
+    }
   }
 }
 
@@ -53,7 +56,7 @@ pub struct Gist;
 
 impl Gist {
   pub fn new() -> Self {
-    Gist { }
+    Gist {}
   }
 }
 
@@ -63,8 +66,7 @@ impl Engine for Gist {
     let j = try!(json::encode(&upload).map_err(|e| e.to_string()));
     let client = Client::new();
     let mut res = try!({
-      let mut builder = client
-        .post("https://api.github.com/gists")
+      let mut builder = client.post("https://api.github.com/gists")
         .body(&j)
         .header(ContentType::json())
         .header(UserAgent(String::from("bins")));
@@ -72,20 +74,15 @@ impl Engine for Gist {
         if let Some(username) = bins.config.lookup_str("gist.username") {
           if let Some(token) = bins.config.lookup_str("gist.access_token") {
             if !username.is_empty() && !token.is_empty() {
-              builder = builder.header(
-                Authorization(
-                  Basic {
-                    username: username.to_owned(),
-                    password: Some(token.to_owned())
-                  }
-                )
-              );
+              builder = builder.header(Authorization(Basic {
+                username: username.to_owned(),
+                password: Some(token.to_owned())
+              }));
             }
           }
         }
       }
-      builder
-        .send()
+      builder.send()
         .map_err(|e| e.to_string())
     });
     let mut s = String::from("");
@@ -95,21 +92,22 @@ impl Engine for Gist {
       return Err("paste could not be created".into());
     }
     let raw_gist = try!(Json::from_str(&s).map_err(|e| e.to_string()));
-    let gist = some_or_err!(raw_gist.as_object(), "response was not a json object".into());
+    let gist = some_or_err!(raw_gist.as_object(),
+                            "response was not a json object".into());
     let html_url = some_or_err!(gist.get("html_url"), "no html_url_key".into());
     let url = some_or_err!(html_url.as_string(), "html_url was not a string".into());
     Ok(url.to_owned())
   }
 
   fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String> {
-    let id = some_or_err!(some_or_err!(url.path_segments(), "could not get path of url".into()).last(), "could not get last path of url".into());
+    let id = some_or_err!(some_or_err!(url.path_segments(), "could not get path of url".into()).last(),
+                          "could not get last path of url".into());
     if bins.arguments.files.len() > 1 {
       return Err("currently, only one file is able to be retrieved in input mode".into());
     }
     let target_file = bins.arguments.files.get(0);
     let client = Client::new();
-    let mut res = try!(client
-      .get(&format!("https://api.github.com/gists/{}", id))
+    let mut res = try!(client.get(&format!("https://api.github.com/gists/{}", id))
       .header(UserAgent(String::from("bins")))
       .send()
       .map_err(|e| e.to_string()));
@@ -126,10 +124,12 @@ impl Engine for Gist {
     }
     if files.len() > 1 && target_file.is_none() {
       let file_names = gist_upload.files.iter().map(|(s, _)| String::from("  ") + s).collect::<Vec<_>>().join("\n");
-      let message = format!("gist had more than one file, but no target file was specified\n\nfiles available:\n{}", file_names);
+      let message = format!("gist had more than one file, but no target file was specified\n\nfiles available:\n{}",
+                            file_names);
       return Err(message.into());
     }
-    let target = target_file.unwrap_or_else(|| &files.iter().next().expect("len > 0 but no first element").0).to_lowercase();
+    let target = target_file.unwrap_or_else(|| &files.iter().next().expect("len > 0 but no first element").0)
+      .to_lowercase();
     if !files.contains_key(&target) {
       return Err("gist did not contain file".into());
     }

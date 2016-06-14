@@ -18,8 +18,8 @@ impl Hastebin {
       indexed_upload: IndexedUpload {
         url: String::from("http://hastebin.com/documents"),
         headers: Headers::new(),
-        url_producer: Box::new(HastebinUrlProducer { }),
-        body_producer: Box::new(HastebinBodyProducer { })
+        url_producer: Box::new(HastebinUrlProducer {}),
+        body_producer: Box::new(HastebinBodyProducer {})
       }
     }
   }
@@ -30,7 +30,8 @@ struct HastebinUrlProducer { }
 impl ProducesUrl for HastebinUrlProducer {
   fn produce_url(&self, _: &Bins, res: Response, data: String) -> Result<String> {
     let raw_response = try!(Json::from_str(&data).map_err(|e| e.to_string()));
-    let response = some_or_err!(raw_response.as_object(), "response was not a json object".into());
+    let response = some_or_err!(raw_response.as_object(),
+                                "response was not a json object".into());
     let raw_key = some_or_err!(response.get("key"), "no key".into());
     let key = some_or_err!(raw_key.as_string(), "key was not a string".into());
     let scheme = res.url.scheme();

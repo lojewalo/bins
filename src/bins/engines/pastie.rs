@@ -20,8 +20,8 @@ impl Pastie {
       indexed_upload: IndexedUpload {
         url: String::from("http://pastie.org/pastes"),
         headers: headers,
-        url_producer: Box::new(PastieUrlProducer { }),
-        body_producer: Box::new(PastieBodyProducer { })
+        url_producer: Box::new(PastieUrlProducer {}),
+        body_producer: Box::new(PastieBodyProducer {})
       }
     }
   }
@@ -39,13 +39,16 @@ struct PastieBodyProducer { }
 
 impl ProducesBody for PastieBodyProducer {
   fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String> {
-    Ok(
-      form_urlencoded::Serializer::new(String::new())
-        .append_pair("paste[body]", &data.data)
-        .append_pair("paste[authorization]", "burger")
-        .append_pair("paste[restricted]", if bins.arguments.private { "1" } else { "0" })
-        .finish()
-    )
+    Ok(form_urlencoded::Serializer::new(String::new())
+      .append_pair("paste[body]", &data.data)
+      .append_pair("paste[authorization]", "burger")
+      .append_pair("paste[restricted]",
+                   if bins.arguments.private {
+                     "1"
+                   } else {
+                     "0"
+                   })
+      .finish())
   }
 }
 

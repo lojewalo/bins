@@ -31,7 +31,10 @@ pub struct PasteFile {
 
 impl PasteFile {
   fn new(name: String, data: String) -> Self {
-    PasteFile { name: name, data: data }
+    PasteFile {
+      name: name,
+      data: data
+    }
   }
 }
 
@@ -51,7 +54,7 @@ impl Bins {
   pub fn get_engine(&self) -> Result<Box<Engine>> {
     let service = match self.arguments.service {
       Some(ref s) => s,
-      None => return Err("no service was specified and no default service was set.".into())
+      None => return Err("no service was specified and no default service was set.".into()),
     };
     match service.to_lowercase().as_ref() {
       "gist" => Ok(Box::new(Gist::new())),
@@ -67,7 +70,7 @@ impl Bins {
     let path = p.as_ref();
     let name = match path.to_str() {
       Some(s) => s,
-      None => return Err(String::from("file name was not valid unicode").into())
+      None => return Err(String::from("file name was not valid unicode").into()),
     };
     if !path.exists() {
       return Err(format!("{} does not exist", name).into());
@@ -94,11 +97,11 @@ impl Bins {
       Ok(s) => {
         let n = match path.file_name() {
           Some(x) => x,
-          None => return Err("not a valid file name".into())
+          None => return Err("not a valid file name".into()),
         };
         Ok(PasteFile::new(n.to_string_lossy().into_owned(), s))
-      },
-      Err(s) => Err(s)
+      }
+      Err(s) => Err(s),
     }
   }
 
@@ -119,7 +122,8 @@ impl Bins {
           return Err(res.err().unwrap().into());
         }
       }
-      let mut pastes = results.iter().cloned().map(|r| r.unwrap()).filter(|p| !p.data.trim().is_empty()).collect::<Vec<_>>();
+      let mut pastes =
+        results.iter().cloned().map(|r| r.unwrap()).filter(|p| !p.data.trim().is_empty()).collect::<Vec<_>>();
       self.handle_duplicate_file_names(&mut pastes);
       pastes
     } else {
@@ -161,7 +165,7 @@ impl Bins {
   fn get_engine_for_url(&self, url: &Url) -> Result<Box<Engine>> {
     let domain = match url.domain() {
       Some(d) => d,
-      None => return Err("input url had no domain".into())
+      None => return Err("input url had no domain".into()),
     };
     let engine: Box<Engine> = match domain {
       "gist.github.com" => Box::new(Gist::new()),
@@ -178,7 +182,7 @@ impl Bins {
     // can't use try!() because url::parser is private, and ParseError is at url::parser::ParseError
     let mut url = match Url::parse(url_string.as_ref()) {
       Ok(u) => u,
-      Err(e) => return Err(e.to_string().into())
+      Err(e) => return Err(e.to_string().into()),
     };
     let engine = try!(self.get_engine_for_url(&url));
     engine.get_raw(self, &mut url)

@@ -5,8 +5,7 @@ use std::env;
 use bins::error::*;
 use toml::Value;
 
-const DEFAULT_CONFIG_FILE: &'static str =
-r#"[defaults]
+const DEFAULT_CONFIG_FILE: &'static str = r#"[defaults]
 # If this is true, all pastes will be created as private or unlisted.
 # Using the command-line option `--public` or `--private` will change this behavior.
 private = true
@@ -47,11 +46,10 @@ pub trait BetterLookups {
 }
 
 impl BetterLookups for Value {
-
   fn lookup_str<'a>(&'a self, path: &'a str) -> Option<&str> {
     match self.lookup(path) {
       Some(v) => v.as_str(),
-      None => None
+      None => None,
     }
   }
 
@@ -62,7 +60,7 @@ impl BetterLookups for Value {
   fn lookup_bool<'a>(&'a self, path: &'a str) -> Option<bool> {
     match self.lookup(path) {
       Some(v) => v.as_bool(),
-      None => None
+      None => None,
     }
   }
 
@@ -76,7 +74,7 @@ pub struct BinsConfiguration;
 
 impl BinsConfiguration {
   pub fn new() -> Self {
-    BinsConfiguration { }
+    BinsConfiguration {}
   }
 }
 
@@ -92,7 +90,7 @@ pub trait Configurable {
     }
     let mut home = match env::home_dir() {
       Some(p) => p,
-      None => return paths
+      None => return paths,
     };
     let mut dot_config = home.clone();
     dot_config.push(".config");
@@ -114,9 +112,11 @@ impl Configurable for BinsConfiguration {
       Some(p) => p,
       None => {
         let config_paths = self.get_config_paths();
-        let priority = some_or_err!(config_paths.first(), "no possible config paths computed".into());
+        let priority = some_or_err!(config_paths.first(),
+                                    "no possible config paths computed".into());
         let parent = some_or_err!(priority.parent(), "config file path had no parent".into());
-        let parent_str = some_or_err!(parent.to_str(), "config file path parent could not be converted to string".into());
+        let parent_str = some_or_err!(parent.to_str(),
+                                      "config file path parent could not be converted to string".into());
         try!(fs::create_dir_all(parent_str));
         priority.to_path_buf()
       }
@@ -126,13 +126,13 @@ impl Configurable for BinsConfiguration {
       try!(file.write_all(DEFAULT_CONFIG_FILE.as_bytes()));
     }
     if (&path).is_dir() || !&path.is_file() {
-      return Err("configuration file exists, but is not a valid file".into())
+      return Err("configuration file exists, but is not a valid file".into());
     }
     let mut config = String::new();
     try!(try!(File::open(path)).read_to_string(&mut config));
     match config.parse() {
       Ok(v) => Ok(v),
-      Err(e) => Err(e.into_iter().next().map_or("could not parse config".to_owned(), |e| e.to_string()).into())
+      Err(e) => Err(e.into_iter().next().map_or("could not parse config".to_owned(), |e| e.to_string()).into()),
     }
   }
 }

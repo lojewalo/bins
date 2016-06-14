@@ -19,7 +19,8 @@ impl Index {
     if lines.len() < 4 {
       return Err(ErrorKind::InvalidIndexError.into());
     }
-    let possible_urls: HashMap<Option<&str>, Option<&str>> = lines.iter().skip(3)
+    let possible_urls: HashMap<Option<&str>, Option<&str>> = lines.iter()
+      .skip(3)
       .filter(|s| !s.trim().is_empty())
       .map(|s| {
         let mut split = s.split(" ");
@@ -31,10 +32,13 @@ impl Index {
     if possible_urls.iter().any(|t| t.0.is_none() || t.1.is_none()) {
       return Err(ErrorKind::InvalidIndexError.into());
     }
-    let urls: HashMap<String, String> = possible_urls.iter().map(|o| (o.0.expect("none were none, but one was none").to_owned(), o.1.expect("none were none, but one was none").to_owned())).collect();
-    Ok(Index {
-      file_urls: urls
-    })
+    let urls: HashMap<String, String> = possible_urls.iter()
+      .map(|o| {
+        (o.0.expect("none were none, but one was none").to_owned(),
+         o.1.expect("none were none, but one was none").to_owned())
+      })
+      .collect();
+    Ok(Index { file_urls: urls })
   }
 }
 
@@ -60,7 +64,10 @@ pub trait UploadsIndices {
     if data.len() < 2 {
       return self.real_upload(bins, &data[0]);
     }
-    let wrapped_urls = data.iter().map(|f| self.real_upload(bins, f)).map(|r| r.map_err(|e| e.iter().map(|x| x.to_string()).collect::<Vec<_>>().join("\n"))).collect::<Vec<_>>();
+    let wrapped_urls = data.iter()
+      .map(|f| self.real_upload(bins, f))
+      .map(|r| r.map_err(|e| e.iter().map(|x| x.to_string()).collect::<Vec<_>>().join("\n")))
+      .collect::<Vec<_>>();
     for url in wrapped_urls.iter().cloned() {
       if url.is_err() {
         return Err(url.err().unwrap().into());
@@ -74,7 +81,11 @@ pub trait UploadsIndices {
       index = index.replace(&replace, url.as_ref());
       number += 1;
     }
-    let index_url = try!(self.real_upload(bins, &PasteFile { name: String::from("index"), data: index }));
+    let index_url = try!(self.real_upload(bins,
+                                          &PasteFile {
+                                            name: String::from("index"),
+                                            data: index
+                                          }));
     Ok(index_url)
   }
 
@@ -84,7 +95,9 @@ pub trait UploadsIndices {
     let mut body = String::from("");
     for (i, file) in data.iter().enumerate() {
       let number = i + 1;
-      body.push_str(&format!("{number}. {name}: <url{number}>\n", number = number, name = file.name));
+      body.push_str(&format!("{number}. {name}: <url{number}>\n",
+                             number = number,
+                             name = file.name));
     }
     header + "\n" + &separator + "\n\n" + &body
   }
@@ -97,13 +110,11 @@ pub trait UploadsIndices {
 impl UploadsIndices for IndexedUpload {
   fn real_upload(&self, bins: &Bins, data: &PasteFile) -> Result<String> {
     let client = Client::new();
-    let mut res = try!(
-      client.post(&self.url)
-        .headers(self.headers.clone())
-        .body(&try!(self.body_producer.as_ref().produce_body(bins, data)))
-        .send()
-        .map_err(|e| e.to_string())
-    );
+    let mut res = try!(client.post(&self.url)
+      .headers(self.headers.clone())
+      .body(&try!(self.body_producer.as_ref().produce_body(bins, data)))
+      .send()
+      .map_err(|e| e.to_string()));
     let mut s = String::from("");
     try!(res.read_to_string(&mut s).map_err(|e| e.to_string()));
     // 404 for pastie, which appears to have issues when redirecting?
@@ -148,16 +159,18 @@ pub trait ChecksIndices {
       let target_file = bins.arguments.files.get(0);
       if urls.len() > 1 && target_file.is_none() {
         let file_names = index.file_urls.iter().map(|(s, _)| String::from("  ") + s).collect::<Vec<_>>().join("\n");
-        let message = format!("index had more than one file, but no target file was specified\n\nfiles available:\n{}", file_names);
+        let message = format!("index had more than one file, but no target file was specified\n\nfiles available:\n{}",
+                              file_names);
         return Err(message.into());
       }
-      let target = target_file.unwrap_or_else(|| &urls.iter().next().expect("len() > 0, but no first element").0).to_lowercase();
+      let target = target_file.unwrap_or_else(|| &urls.iter().next().expect("len() > 0, but no first element").0)
+        .to_lowercase();
       if !urls.contains_key(&target) {
         return Err("index did not contain file".into());
       }
       match Url::parse(urls[&target].as_ref()) {
         Ok(u) => return Ok(u),
-        Err(e) => return Err(e.to_string().into())
+        Err(e) => return Err(e.to_string().into()),
       }
     }
     Err(ErrorKind::InvalidIndexError.into())
