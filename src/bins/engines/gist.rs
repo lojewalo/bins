@@ -129,7 +129,8 @@ impl Engine for Gist {
       let message = format!("gist had more than one file, but no target file was specified\n\nfiles available:\n{}", file_names);
       return Err(message.into());
     }
-    let target = target_file.unwrap_or(&"".to_owned()).to_lowercase(); // FIXME
+    let (first, _) = files.iter().nth(0).expect("len > 0 but no first element");
+    let target = target_file.unwrap_or(&first).to_lowercase();
     if !files.contains_key(&target) {
       return Err("gist did not contain file".into());
     }
