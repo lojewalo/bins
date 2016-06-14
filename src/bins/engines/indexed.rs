@@ -15,7 +15,7 @@ pub struct Index {
 
 impl Index {
   pub fn from(string: &str) -> Result<Index> {
-    let lines: Vec<&str> = string.split("\n").collect();
+    let lines: Vec<&str> = string.split('\n').collect();
     if lines.len() < 4 {
       return Err(ErrorKind::InvalidIndexError.into());
     }
@@ -23,7 +23,7 @@ impl Index {
       .skip(3)
       .filter(|s| !s.trim().is_empty())
       .map(|s| {
-        let mut split = s.split(" ");
+        let mut split = s.split(' ');
         let name = split.nth(1).map(|x| x[..x.len() - 1].as_ref());
         let url = split.nth(0);
         (name, url)
@@ -150,8 +150,8 @@ impl DownloadsFile for IndexedDownload {
 }
 
 pub trait ChecksIndices {
-  fn check_index(&self, bins: &Bins, downloaded: &String) -> Result<Url> {
-    if let Ok(index) = Index::from(&downloaded) {
+  fn check_index(&self, bins: &Bins, downloaded: &str) -> Result<Url> {
+    if let Ok(index) = Index::from(downloaded) {
       let urls: HashMap<String, &String> = index.file_urls.iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
       if urls.len() < 1 {
         return Err("index had no files".into());
@@ -163,7 +163,7 @@ pub trait ChecksIndices {
                               file_names);
         return Err(message.into());
       }
-      let target = target_file.unwrap_or_else(|| &urls.iter().next().expect("len() > 0, but no first element").0)
+      let target = target_file.unwrap_or_else(|| urls.iter().next().expect("len() > 0, but no first element").0)
         .to_lowercase();
       if !urls.contains_key(&target) {
         return Err("index did not contain file".into());

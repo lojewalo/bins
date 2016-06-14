@@ -62,7 +62,7 @@ impl Engine for Sprunge {
     match self.check_index(bins, &downloaded) {
       Ok(mut new_url) => return self.get_raw(bins, &mut new_url),
       Err(e) => {
-        if let &ErrorKind::InvalidIndexError = e.kind() {} else {
+        if let ErrorKind::InvalidIndexError = *e.kind() {} else {
           return Err(e);
         }
       }

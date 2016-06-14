@@ -128,13 +128,13 @@ impl Engine for Gist {
                             file_names);
       return Err(message.into());
     }
-    let target = target_file.unwrap_or_else(|| &files.iter().next().expect("len > 0 but no first element").0)
+    let target = target_file.unwrap_or_else(|| files.iter().next().expect("len > 0 but no first element").0)
       .to_lowercase();
     if !files.contains_key(&target) {
       return Err("gist did not contain file".into());
     }
-    let ref file = some_or_err!(files.get(&target), "gist did not contain file".into());
-    let ref option_raw_url = file.raw_url;
+    let file = &some_or_err!(files.get(&target), "gist did not contain file".into());
+    let option_raw_url = &file.raw_url;
     let raw_url = some_ref_or_err!(option_raw_url, "file had no raw_url".into());
     let download = IndexedDownload {
       url: raw_url.to_owned(),
