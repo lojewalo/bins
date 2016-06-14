@@ -88,5 +88,14 @@ https://gist.github.com/05285845622e5d6164f0d36b73685b19
 
 ### Configuration
 
-There is a configuration file with documentation that is generated at `$HOME/.bins.cfg` after the first run of the
-program.
+Running bins at least once will generate a configuration file. Its location is dependent on the environment that bins is
+run in. The configuration file will be created at the first available location in the list below:
+
+- `$XDG_CONFIG_DIR/bins.cfg`
+- `$HOME/.config/bins.cfg`
+- `$HOME/.bins.cfg`
+
+If none of these paths are available (`$XDG_CONFIG_DIR` and `$HOME` are either both unset or unwritable), bins will fail
+and not generate a config file.
+
+The configuration file is documented when it is generated, so check the file for configuration documentation.
