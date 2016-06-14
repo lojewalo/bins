@@ -22,5 +22,4 @@ git2 = "0.4.3"
 rustc_version = "0.1.7"
 
 [profile.release]
-# https://github.com/rust-lang/rust/issues/28233
-# lto = true
+lto = true
