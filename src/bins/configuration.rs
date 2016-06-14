@@ -20,7 +20,7 @@ auth = true
 # optional and use the configured service if the option is not specified.
 # service = ""
 
-# If this is true, all command will copy their output to the system clipboard.
+# If this is true, all commands will copy their output to the system clipboard.
 # Using the command-line option `--copy` or `--no-copy` will change this behavior.
 copy = false
 
