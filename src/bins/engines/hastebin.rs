@@ -4,7 +4,7 @@ use bins::engines::Engine;
 use hyper::client::Response;
 use rustc_serialize::json::Json;
 use bins::engines::indexed::{IndexedUpload, UploadsIndices, ProducesUrl, ProducesBody};
-use bins::engines::indexed::{IndexedDownload, DownloadsFile};
+use bins::engines::indexed::{ChecksIndices, IndexedDownload, DownloadsFile};
 use hyper::header::Headers;
 use hyper::Url;
 
@@ -47,12 +47,14 @@ impl ProducesBody for HastebinBodyProducer {
   }
 }
 
+impl ChecksIndices for Hastebin {}
+
 impl Engine for Hastebin {
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
   }
 
-  fn get_raw(&self, _: &Bins, url: &mut Url) -> Result<String> {
+  fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String> {
     let new_path = {
       String::from("/raw") + url.path().split('.').collect::<Vec<_>>()[0]
     };
@@ -62,6 +64,15 @@ impl Engine for Hastebin {
       headers: Headers::new(),
       target: None
     };
-    download.download()
+    let downloaded = try!(download.download());
+    match self.check_index(bins, &downloaded) {
+      Ok(mut new_url) => return self.get_raw(bins, &mut new_url),
+      Err(e) => {
+        if let &ErrorKind::InvalidIndexError = e.kind() {} else {
+          return Err(e);
+        }
+      }
+    }
+    Ok(downloaded)
   }
 }

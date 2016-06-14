@@ -4,8 +4,39 @@ use std::iter::repeat;
 use hyper::client::Client;
 use hyper::client::Response;
 use hyper::header::Headers;
+use hyper::Url;
 use std::io::Read;
 use hyper::status::StatusCode;
+use std::collections::HashMap;
+
+pub struct Index {
+  pub file_urls: HashMap<String, String>
+}
+
+impl Index {
+  pub fn from(string: &str) -> Result<Index> {
+    let lines: Vec<&str> = string.split("\n").collect();
+    if lines.len() < 4 {
+      return Err(ErrorKind::InvalidIndexError.into());
+    }
+    let possible_urls: HashMap<Option<&str>, Option<&str>> = lines.iter().skip(3)
+      .filter(|s| !s.trim().is_empty())
+      .map(|s| {
+        let mut split = s.split(" ");
+        let name = split.nth(1).map(|x| x[..x.len() - 1].as_ref());
+        let url = split.nth(0);
+        (name, url)
+      })
+      .collect();
+    if possible_urls.iter().any(|t| t.0.is_none() || t.1.is_none()) {
+      return Err(ErrorKind::InvalidIndexError.into());
+    }
+    let urls: HashMap<String, String> = possible_urls.iter().map(|o| (o.0.expect("none were none, but one was none").to_owned(), o.1.expect("none were none, but one was none").to_owned())).collect();
+    Ok(Index {
+      file_urls: urls
+    })
+  }
+}
 
 pub struct IndexedUpload {
   pub url: String,
@@ -104,5 +135,31 @@ impl DownloadsFile for IndexedDownload {
     let mut s = String::from("");
     try!(res.read_to_string(&mut s));
     Ok(s)
+  }
+}
+
+pub trait ChecksIndices {
+  fn check_index(&self, bins: &Bins, downloaded: &String) -> Result<Url> {
+    if let Ok(index) = Index::from(&downloaded) {
+      let urls: HashMap<String, &String> = index.file_urls.iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
+      if urls.len() < 1 {
+        return Err("index had no files".into());
+      }
+      let target_file = bins.arguments.files.get(0);
+      if urls.len() > 1 && target_file.is_none() {
+        let file_names = index.file_urls.iter().map(|(s, _)| String::from("  ") + s).collect::<Vec<_>>().join("\n");
+        let message = format!("index had more than one file, but no target file was specified\n\nfiles available:\n{}", file_names);
+        return Err(message.into());
+      }
+      let target = target_file.unwrap_or_else(|| &urls.iter().next().expect("len() > 0, but no first element").0).to_lowercase();
+      if !urls.contains_key(&target) {
+        return Err("index did not contain file".into());
+      }
+      match Url::parse(urls[&target].as_ref()) {
+        Ok(u) => return Ok(u),
+        Err(e) => return Err(e.to_string().into())
+      }
+    }
+    Err(ErrorKind::InvalidIndexError.into())
   }
 }

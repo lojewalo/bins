@@ -37,5 +37,9 @@ error_chain! {
   // the same as `quick_error!`, but the `from()` and `cause()`
   // syntax is not supported.
   errors {
+    InvalidIndexError {
+      description("invalid index file")
+      display("invalid index file")
+    }
   }
 }
