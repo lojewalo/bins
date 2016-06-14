@@ -1,6 +1,7 @@
 use toml;
 use std::io;
 use hyper;
+use rustc_serialize;
 
 error_chain! {
   // The type defined for this error. These are the conventional
@@ -29,6 +30,7 @@ error_chain! {
     toml::ParserError, ParserError, "configuration parse error";
     io::Error, IoError, "I/O error";
     hyper::Error, HyperError, "connection error";
+    rustc_serialize::json::DecoderError, JsonDecoderError, "json decoder error";
   }
 
   // Define additional `ErrorKind` variants. The syntax here is

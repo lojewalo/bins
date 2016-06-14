@@ -11,7 +11,7 @@ use std::io::Read;
 use rustc_serialize::json::{self, Json};
 use hyper::Url;
 
-#[derive(RustcEncodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 struct GistUpload {
   files: HashMap<String, GistFile>,
   description: String,
@@ -37,14 +37,15 @@ impl GistUpload {
   }
 }
 
-#[derive(RustcEncodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 struct GistFile {
-  content: String
+  content: String,
+  raw_url: Option<String>
 }
 
 impl From<String> for GistFile {
   fn from(string: String) -> Self {
-    GistFile { content: string }
+    GistFile { content: string, raw_url: None }
   }
 }
 
@@ -118,24 +119,23 @@ impl Engine for Gist {
       println!("{}", s);
       return Err("status was not ok".into());
     }
-    let raw_gist = try!(Json::from_str(&s).map_err(|e| e.to_string()));
-    let gist = some_or_err!(raw_gist.as_object(), "response was not a json object".into());
-    let files = some_or_err!(some_or_err!(gist.get("files"), "no files".into()).as_object(), "files was not a json object".into());
-    let keys = files.keys().cloned().map(|s| s.to_lowercase()).collect::<Vec<_>>();
-    if keys.len() < 1 {
+    let gist_upload: GistUpload = try!(json::decode(&s));
+    let files = gist_upload.files;
+    if files.len() < 1 {
       return Err("gist had no files".into());
     }
-    if keys.len() > 1 && target_file.is_none() {
-      let file_names = keys.iter().map(|s| String::from("  ") + s).collect::<Vec<_>>().join("\n");
+    if files.len() > 1 && target_file.is_none() {
+      let file_names = files.iter().map(|(s, _)| String::from("  ") + s).collect::<Vec<_>>().join("\n");
       let message = format!("gist had more than one file, but no target file was specified\n\nfiles available:\n{}", file_names);
       return Err(message.into());
     }
-    let target = target_file.unwrap_or(&keys[0]).to_lowercase();
-    if !keys.contains(&target) {
+    let target = target_file.unwrap_or(&"".to_owned()).to_lowercase(); // FIXME
+    if !files.contains_key(&target) {
       return Err("gist did not contain file".into());
     }
-    let file = some_or_err!(some_or_err!(files.get(&target), format!("could not find {}", target).into()).as_object(), "file was not a json object".into());
-    let raw_url = some_or_err!(some_or_err!(file.get("raw_url"), "no raw_url".into()).as_string(), "raw_url was not a string".into());
+    let ref file = some_or_err!(files.get(&target), "gist did not contain file".into());
+    let ref option_raw_url = file.raw_url;
+    let raw_url = some_ref_or_err!(option_raw_url, "file had no raw_url".into());
     let download = IndexedDownload {
       url: raw_url.to_owned(),
       headers: Headers::new(),
