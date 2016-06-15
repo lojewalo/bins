@@ -68,9 +68,7 @@ impl Bins {
     }
     let mut file = match File::open(path) {
       Ok(f) => f,
-      Err(e) => {
-        return Err(format!("could not open {}: {}", name, e).into());
-      }
+      Err(e) => return Err(format!("could not open {}: {}", name, e).into()),
     };
     let mut s = String::new();
     if let Err(e) = file.read_to_string(&mut s) {
@@ -83,10 +81,7 @@ impl Bins {
     let path = p.as_ref();
     match self.read_file(path) {
       Ok(s) => {
-        let n = match path.file_name() {
-          Some(x) => x,
-          None => return Err("not a valid file name".into()),
-        };
+        let n = some_or_err!(path.file_name(), "not a valid file name".into());
         Ok(PasteFile::new(n.to_string_lossy().into_owned(), s))
       }
       Err(s) => Err(s),
