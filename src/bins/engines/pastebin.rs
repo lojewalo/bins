@@ -13,6 +13,8 @@ pub struct Pastebin {
   indexed_upload: IndexedUpload
 }
 
+unsafe impl Sync for Pastebin {}
+
 impl Pastebin {
   pub fn new() -> Self {
     let mut headers = Headers::new();

@@ -12,6 +12,8 @@ pub struct Pastie {
   indexed_upload: IndexedUpload
 }
 
+unsafe impl Sync for Pastie {}
+
 impl Pastie {
   pub fn new() -> Self {
     let mut headers = Headers::new();

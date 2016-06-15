@@ -25,6 +25,8 @@ impl Hastebin {
   }
 }
 
+unsafe impl Sync for Hastebin {}
+
 struct HastebinUrlProducer { }
 
 impl ProducesUrl for HastebinUrlProducer {

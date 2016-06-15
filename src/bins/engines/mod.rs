@@ -10,7 +10,7 @@ use bins::PasteFile;
 use bins::Bins;
 use hyper::Url;
 
-pub trait Engine {
+pub trait Engine: Sync {
   fn get_name(&self) -> &str;
 
   fn get_domain(&self) -> &str;

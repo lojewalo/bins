@@ -60,6 +60,8 @@ impl Gist {
   }
 }
 
+unsafe impl Sync for Gist {}
+
 impl Engine for Gist {
   fn get_name(&self) -> &str {
     "gist"

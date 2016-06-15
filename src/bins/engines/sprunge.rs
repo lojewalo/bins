@@ -25,6 +25,8 @@ impl Sprunge {
   }
 }
 
+unsafe impl Sync for Sprunge {}
+
 struct SprungeUrlProducer { }
 
 impl ProducesUrl for SprungeUrlProducer {
