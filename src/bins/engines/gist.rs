@@ -35,6 +35,38 @@ impl GistUpload {
     }
     gist
   }
+
+  fn get_url(&self, bins: &Bins, nth: Option<usize>) -> Result<String> {
+    let target_file = bins.arguments.files.get(0);
+    let files: BTreeMap<String, &GistFile> = self.files.iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
+    if files.len() < 1 {
+      return Err("gist had no files".into());
+    }
+    if files.len() > 1 && target_file.is_none() && nth.is_none() {
+      let file_names = self.files.iter().map(|(s, _)| String::from("  ") + s).collect::<Vec<_>>().join("\n");
+      let message = format!("gist had more than one file, but no target file was specified\n\nfiles available:\n{}",
+                            file_names);
+      return Err(message.into());
+    }
+    let get_url = || {
+      let nth = nth.unwrap_or(0);
+      let file = files.iter().nth(nth);
+      let whatever = some_or_err!(file, format!("file {} did not exist", nth).into());
+      Ok(whatever.0)
+    };
+    let target_result: Result<&String> = match target_file {
+      Some(file) => Ok(file),
+      None => get_url(),
+    };
+    let target = try!(target_result).to_lowercase();
+    if !files.contains_key(&target) {
+      return Err("gist did not contain file".into());
+    }
+    let file = &some_or_err!(files.get(&target), "gist did not contain file".into());
+    let option_raw_url = &file.raw_url;
+    let raw_url = some_ref_or_err!(option_raw_url, "file had no raw_url".into());
+    Ok(raw_url.to_owned())
+  }
 }
 
 #[derive(RustcEncodable, RustcDecodable)]
@@ -115,7 +147,6 @@ impl Engine for Gist {
     if bins.arguments.files.len() > 1 {
       return Err("currently, only one file is able to be retrieved in input mode".into());
     }
-    let target_file = bins.arguments.files.get(0);
     let client = Client::new();
     let mut res = try!(client.get(&format!("https://api.github.com/gists/{}", id))
       .header(UserAgent(String::from("bins")))
@@ -128,26 +159,9 @@ impl Engine for Gist {
       return Err("status was not ok".into());
     }
     let gist_upload: GistUpload = try!(json::decode(&s));
-    let files: HashMap<String, &GistFile> = gist_upload.files.iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
-    if files.len() < 1 {
-      return Err("gist had no files".into());
-    }
-    if files.len() > 1 && target_file.is_none() {
-      let file_names = gist_upload.files.iter().map(|(s, _)| String::from("  ") + s).collect::<Vec<_>>().join("\n");
-      let message = format!("gist had more than one file, but no target file was specified\n\nfiles available:\n{}",
-                            file_names);
-      return Err(message.into());
-    }
-    let target = target_file.unwrap_or_else(|| files.iter().next().expect("len > 0 but no first element").0)
-      .to_lowercase();
-    if !files.contains_key(&target) {
-      return Err("gist did not contain file".into());
-    }
-    let file = &some_or_err!(files.get(&target), "gist did not contain file".into());
-    let option_raw_url = &file.raw_url;
-    let raw_url = some_ref_or_err!(option_raw_url, "file had no raw_url".into());
+    let raw_url = try!(gist_upload.get_url(bins, bins.arguments.nth));
     let download = IndexedDownload {
-      url: raw_url.to_owned(),
+      url: raw_url,
       headers: Headers::new(),
       target: None
     };

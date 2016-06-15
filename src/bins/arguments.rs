@@ -12,7 +12,8 @@ pub struct Arguments {
   pub private: bool,
   pub auth: bool,
   pub copy: bool,
-  pub input: Option<String>
+  pub input: Option<String>,
+  pub nth: Option<usize>
 }
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
@@ -53,7 +54,8 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
     private: config.lookup_bool_or("defaults.private", true),
     auth: config.lookup_bool_or("defaults.auth", true),
     copy: config.lookup_bool_or("defaults.copy", false),
-    input: None
+    input: None,
+    nth: None
   };
   let name = get_name();
   let version = get_version();
@@ -69,7 +71,8 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
       .long("message")
       .help("message to paste")
       .use_delimiter(false)
-      .takes_value(true))
+      .takes_value(true)
+      .value_name("string"))
     .arg(Arg::with_name("private")
       .short("p")
       .long("private")
@@ -105,7 +108,16 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
       .long("input")
       .help("displays raw contents of input paste")
       .takes_value(true)
-      .conflicts_with_all(&["auth", "anon", "public", "private", "message", "service"]));
+      .value_name("url")
+      .conflicts_with_all(&["auth", "anon", "public", "private", "message", "service"]))
+    .arg(Arg::with_name("nth")
+      .short("n")
+      .long("nth")
+      .help("chooses the file to get in input mode, starting from 0")
+      .takes_value(true)
+      .value_name("index")
+      .requires("input")
+      .conflicts_with("files"));
   for arg in get_clipboard_args() {
     app = app.arg(arg);
   }
@@ -125,6 +137,10 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
   }
   if let Some(input) = res.value_of("input") {
     arguments.input = Some(input.to_owned());
+  }
+  if let Some(nth) = res.value_of("nth") {
+    let nth = try!(nth.parse::<usize>().map_err(|_| "nth argument was not a number"));
+    arguments.nth = Some(nth);
   }
   if res.is_present("private") {
     arguments.private = true;

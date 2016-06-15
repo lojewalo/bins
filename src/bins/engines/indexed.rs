@@ -150,28 +150,42 @@ impl DownloadsFile for IndexedDownload {
 }
 
 pub trait ChecksIndices {
+  fn get_url_from_index(&self, bins: &Bins, index: &Index, nth: Option<usize>) -> Result<Url> {
+    let urls: LinkedHashMap<String, &String> = index.file_urls.iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
+    if urls.len() < 1 {
+      return Err("index had no files".into());
+    }
+    let target_file = bins.arguments.files.get(0);
+    if urls.len() > 1 && target_file.is_none() && nth.is_none() {
+      let file_names = index.file_urls.iter().map(|(s, _)| String::from("  ") + s).collect::<Vec<_>>().join("\n");
+      let message = format!("index had more than one file, but no target file or index was specified\n\nfiles \
+                             available:\n{}",
+                            file_names);
+      return Err(message.into());
+    }
+    let get_url = || {
+      let nth = nth.unwrap_or(0);
+      let url = urls.iter().nth(nth);
+      let whatever = some_or_err!(url, format!("file {} did not exist", nth).into());
+      Ok(whatever.0)
+    };
+    let target_result: Result<&String> = match target_file {
+      Some(file) => Ok(file),
+      None => get_url(),
+    };
+    let target = try!(target_result).to_lowercase();
+    if !urls.contains_key(&target) {
+      return Err("index did not contain file".into());
+    }
+    match Url::parse(urls[&target].as_ref()) {
+      Ok(u) => return Ok(u),
+      Err(e) => return Err(e.to_string().into()),
+    }
+  }
+
   fn check_index(&self, bins: &Bins, downloaded: &str) -> Result<Url> {
     if let Ok(index) = Index::from(downloaded) {
-      let urls: HashMap<String, &String> = index.file_urls.iter().map(|(k, v)| (k.to_lowercase(), v)).collect();
-      if urls.len() < 1 {
-        return Err("index had no files".into());
-      }
-      let target_file = bins.arguments.files.get(0);
-      if urls.len() > 1 && target_file.is_none() {
-        let file_names = index.file_urls.iter().map(|(s, _)| String::from("  ") + s).collect::<Vec<_>>().join("\n");
-        let message = format!("index had more than one file, but no target file was specified\n\nfiles available:\n{}",
-                              file_names);
-        return Err(message.into());
-      }
-      let target = target_file.unwrap_or_else(|| urls.iter().next().expect("len() > 0, but no first element").0)
-        .to_lowercase();
-      if !urls.contains_key(&target) {
-        return Err("index did not contain file".into());
-      }
-      match Url::parse(urls[&target].as_ref()) {
-        Ok(u) => return Ok(u),
-        Err(e) => return Err(e.to_string().into()),
-      }
+      return self.get_url_from_index(bins, &index, bins.arguments.nth);
     }
     Err(ErrorKind::InvalidIndexError.into())
   }
