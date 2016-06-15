@@ -6,21 +6,21 @@ use bins::configuration::BetterLookups;
 use hyper::client::Client;
 use hyper::header::{Headers, ContentType, UserAgent, Authorization, Basic};
 use hyper::status::StatusCode;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::io::Read;
 use rustc_serialize::json::{self, Json};
 use hyper::Url;
 
 #[derive(RustcEncodable, RustcDecodable)]
 struct GistUpload {
-  files: HashMap<String, GistFile>,
+  files: BTreeMap<String, GistFile>,
   description: String,
   public: bool
 }
 
 impl GistUpload {
   fn new(description: Option<String>, public: bool) -> Self {
-    let map = HashMap::new();
+    let map = BTreeMap::new();
     GistUpload {
       files: map,
       description: description.unwrap_or_else(String::new),
