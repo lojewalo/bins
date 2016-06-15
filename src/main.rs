@@ -7,6 +7,7 @@ extern crate url;
 extern crate error_chain;
 #[cfg(feature = "clipboard_support")]
 extern crate clipboard;
+extern crate linked_hash_map;
 
 mod bins;
 

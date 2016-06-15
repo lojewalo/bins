@@ -7,10 +7,10 @@ use hyper::header::Headers;
 use hyper::Url;
 use std::io::Read;
 use hyper::status::StatusCode;
-use std::collections::HashMap;
+use linked_hash_map::LinkedHashMap;
 
 pub struct Index {
-  pub file_urls: HashMap<String, String>
+  pub file_urls: LinkedHashMap<String, String>
 }
 
 impl Index {
@@ -19,7 +19,7 @@ impl Index {
     if lines.len() < 4 {
       return Err(ErrorKind::InvalidIndexError.into());
     }
-    let possible_urls: HashMap<Option<&str>, Option<&str>> = lines.iter()
+    let possible_urls: LinkedHashMap<Option<&str>, Option<&str>> = lines.iter()
       .skip(3)
       .filter(|s| !s.trim().is_empty())
       .map(|s| {
@@ -32,7 +32,7 @@ impl Index {
     if possible_urls.iter().any(|t| t.0.is_none() || t.1.is_none()) {
       return Err(ErrorKind::InvalidIndexError.into());
     }
-    let urls: HashMap<String, String> = possible_urls.iter()
+    let urls: LinkedHashMap<String, String> = possible_urls.iter()
       .map(|o| {
         (o.0.expect("none were none, but one was none").to_owned(),
          o.1.expect("none were none, but one was none").to_owned())
