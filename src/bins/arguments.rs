@@ -3,6 +3,7 @@ use clap::{App, Arg};
 use toml::Value;
 use bins::configuration::BetterLookups;
 use bins::engines;
+use bins::error::*;
 
 pub struct Arguments {
   pub files: Vec<String>,
@@ -44,7 +45,7 @@ fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
   vec![]
 }
 
-pub fn get_arguments(config: &Value) -> Arguments {
+pub fn get_arguments(config: &Value) -> Result<Arguments> {
   let mut arguments = Arguments {
     files: Vec::new(),
     message: None,
@@ -140,5 +141,5 @@ pub fn get_arguments(config: &Value) -> Arguments {
   } else if res.is_present("no-copy") {
     arguments.copy = false;
   }
-  arguments
+  Ok(arguments)
 }

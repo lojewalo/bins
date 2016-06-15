@@ -35,7 +35,7 @@ macro_rules! or_exit {
 fn make_bins() -> Result<Bins> {
   let configuration = BinsConfiguration::new();
   let config = try!(configuration.parse_config());
-  let arguments = arguments::get_arguments(&config);
+  let arguments = try!(arguments::get_arguments(&config));
   Ok(Bins::new(config, arguments))
 }
 
