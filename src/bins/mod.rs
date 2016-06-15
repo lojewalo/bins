@@ -16,11 +16,6 @@ use toml::Value;
 use bins::error::*;
 use bins::arguments::Arguments;
 use bins::engines::Engine;
-use bins::engines::gist::Gist;
-use bins::engines::hastebin::Hastebin;
-use bins::engines::pastie::Pastie;
-use bins::engines::pastebin::Pastebin;
-use bins::engines::sprunge::Sprunge;
 use hyper::Url;
 
 #[derive(Clone)]
@@ -51,27 +46,20 @@ impl Bins {
     }
   }
 
-  pub fn get_engine(&self) -> Result<Box<Engine>> {
+  pub fn get_engine(&self) -> Result<&Box<Engine>> {
     let service = match self.arguments.service {
       Some(ref s) => s,
       None => return Err("no service was specified and no default service was set.".into()),
     };
-    match service.to_lowercase().as_ref() {
-      "gist" => Ok(Box::new(Gist::new())),
-      "hastebin" => Ok(Box::new(Hastebin::new())),
-      "pastie" => Ok(Box::new(Pastie::new())),
-      "pastebin" => Ok(Box::new(Pastebin::new())),
-      "sprunge" => Ok(Box::new(Sprunge::new())),
-      _ => Err(format!("unknown service \"{}\"", service).into())
+    match engines::get_engine_by_name(service) {
+      Some(engine) => Ok(engine),
+      None => return Err(format!("unknown service \"{}\"", service).into()),
     }
   }
 
   fn read_file<P: AsRef<Path>>(&self, p: P) -> Result<String> {
     let path = p.as_ref();
-    let name = match path.to_str() {
-      Some(s) => s,
-      None => return Err(String::from("file name was not valid unicode").into()),
-    };
+    let name = some_or_err!(path.to_str(), "file name was not valid unicode".into());
     if !path.exists() {
       return Err(format!("{} does not exist", name).into());
     }
@@ -162,19 +150,10 @@ impl Bins {
     }
   }
 
-  fn get_engine_for_url(&self, url: &Url) -> Result<Box<Engine>> {
-    let domain = match url.domain() {
-      Some(d) => d,
-      None => return Err("input url had no domain".into()),
-    };
-    let engine: Box<Engine> = match domain {
-      "gist.github.com" => Box::new(Gist::new()),
-      "hastebin.com" => Box::new(Hastebin::new()),
-      "pastebin.com" => Box::new(Pastebin::new()),
-      "pastie.org" => Box::new(Pastie::new()),
-      "sprunge.us" => Box::new(Sprunge::new()),
-      _ => return Err(format!("could not find a bin for domain {}", domain).into())
-    };
+  fn get_engine_for_url<'a>(&'a self, url: &'a Url) -> Result<&Box<Engine>> {
+    let domain = some_or_err!(url.domain(), "input url had no domain".into());
+    let engine = some_or_err!(engines::get_engine_by_domain(domain),
+                              format!("could not find a bin for domain {}", domain).into());
     Ok(engine)
   }
 
@@ -184,7 +163,8 @@ impl Bins {
       Ok(u) => u,
       Err(e) => return Err(e.to_string().into()),
     };
-    let engine = try!(self.get_engine_for_url(&url));
+    let url_clone = url.clone();
+    let engine = try!(self.get_engine_for_url(&url_clone));
     engine.get_raw(self, &mut url)
   }
 

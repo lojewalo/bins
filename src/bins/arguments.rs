@@ -2,6 +2,7 @@ use std::process;
 use clap::{App, Arg};
 use toml::Value;
 use bins::configuration::BetterLookups;
+use bins::engines;
 
 pub struct Arguments {
   pub files: Vec<String>,
@@ -91,6 +92,7 @@ pub fn get_arguments(config: &Value) -> Arguments {
       .long("service")
       .help("pastebin service to use")
       .takes_value(true)
+      .possible_values(&*engines::get_engine_names())
       .required(arguments.service.is_none()))
     .arg(Arg::with_name("list-services")
       .short("l")

@@ -8,6 +8,8 @@ extern crate error_chain;
 #[cfg(feature = "clipboard_support")]
 extern crate clipboard;
 extern crate linked_hash_map;
+#[macro_use]
+extern crate lazy_static;
 
 mod bins;
 
