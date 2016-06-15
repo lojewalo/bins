@@ -61,6 +61,14 @@ impl Gist {
 }
 
 impl Engine for Gist {
+  fn get_name(&self) -> &str {
+    "gist"
+  }
+
+  fn get_domain(&self) -> &str {
+    "gist.github.com"
+  }
+
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     let upload = GistUpload::from(bins, data);
     let j = try!(json::encode(&upload).map_err(|e| e.to_string()));

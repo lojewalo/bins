@@ -46,6 +46,14 @@ impl ProducesBody for SprungeBodyProducer {
 impl ChecksIndices for Sprunge {}
 
 impl Engine for Sprunge {
+  fn get_name(&self) -> &str {
+    "sprunge"
+  }
+
+  fn get_domain(&self) -> &str {
+    "sprunge.us"
+  }
+
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
   }

@@ -51,6 +51,14 @@ impl ProducesBody for HastebinBodyProducer {
 impl ChecksIndices for Hastebin {}
 
 impl Engine for Hastebin {
+  fn get_name(&self) -> &str {
+    "hastebin"
+  }
+
+  fn get_domain(&self) -> &str {
+    "hastebin.com"
+  }
+
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
   }

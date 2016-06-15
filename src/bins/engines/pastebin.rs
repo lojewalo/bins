@@ -63,6 +63,14 @@ impl ProducesBody for PastebinBodyProducer {
 impl ChecksIndices for Pastebin {}
 
 impl Engine for Pastebin {
+  fn get_name(&self) -> &str {
+    "pastebin"
+  }
+
+  fn get_domain(&self) -> &str {
+    "pastebin.com"
+  }
+
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
   }

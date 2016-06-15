@@ -55,6 +55,14 @@ impl ProducesBody for PastieBodyProducer {
 impl ChecksIndices for Pastie {}
 
 impl Engine for Pastie {
+  fn get_name(&self) -> &str {
+    "pastie"
+  }
+
+  fn get_domain(&self) -> &str {
+    "pastie.org"
+  }
+
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
     self.indexed_upload.upload(bins, data)
   }

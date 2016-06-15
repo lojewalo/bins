@@ -11,6 +11,10 @@ use bins::Bins;
 use hyper::Url;
 
 pub trait Engine {
+  fn get_name(&self) -> &str;
+
+  fn get_domain(&self) -> &str;
+
   fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String>;
 
   fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String>;
