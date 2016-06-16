@@ -1,22 +1,24 @@
 #[macro_use]
 pub mod macros;
-pub mod error;
 pub mod arguments;
 pub mod configuration;
 pub mod engines;
+pub mod error;
+pub mod network;
 
 extern crate std;
 extern crate toml;
 
-use std::io::prelude::*;
-use std::fs::File;
-use std::path::Path;
-use std::collections::HashMap;
-use toml::Value;
-use bins::error::*;
 use bins::arguments::Arguments;
-use bins::engines::Engine;
+use bins::engines::*;
+use bins::error::*;
 use hyper::Url;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::prelude::*;
+use std::ops::Range;
+use std::path::Path;
+use toml::Value;
 
 #[derive(Clone)]
 pub struct PasteFile {
@@ -29,6 +31,20 @@ impl PasteFile {
     PasteFile {
       name: name,
       data: data
+    }
+  }
+}
+
+trait Join {
+  fn join(&self) -> String;
+}
+
+impl Join for Vec<PasteFile> {
+  fn join(&self) -> String {
+    if self.len() == 1 {
+      self.get(0).expect("len() == 1, but no first element").data.clone()
+    } else {
+      self.into_iter().map(|p| format!("--- {} ---\n\n{}", p.name, p.data)).collect::<Vec<String>>().join("\n\n")
     }
   }
 }
@@ -46,12 +62,12 @@ impl Bins {
     }
   }
 
-  pub fn get_engine(&self) -> Result<&Box<Engine>> {
+  pub fn get_engine(&self) -> Result<&Box<Bin>> {
     let service = match self.arguments.service {
       Some(ref s) => s,
       None => return Err("no service was specified and no default service was set.".into()),
     };
-    match engines::get_engine_by_name(service) {
+    match engines::get_bin_by_name(service) {
       Some(engine) => Ok(engine),
       None => return Err(format!("unknown service \"{}\"", service).into()),
     }
@@ -145,22 +161,19 @@ impl Bins {
     }
   }
 
-  fn get_engine_for_url<'a>(&'a self, url: &'a Url) -> Result<&Box<Engine>> {
+  fn get_engine_for_url<'a>(&'a self, url: &'a Url) -> Result<&Box<Bin>> {
     let domain = some_or_err!(url.domain(), "input url had no domain".into());
-    let engine = some_or_err!(engines::get_engine_by_domain(domain),
+    let engine = some_or_err!(engines::get_bin_by_domain(domain),
                               format!("could not find a bin for domain {}", domain).into());
     Ok(engine)
   }
 
   fn get_raw(&self, url_string: &str) -> Result<String> {
-    // can't use try!() because url::parser is private, and ParseError is at url::parser::ParseError
-    let mut url = match Url::parse(url_string.as_ref()) {
-      Ok(u) => u,
-      Err(e) => return Err(e.to_string().into()),
-    };
+    let mut url = try!(network::parse_url(url_string.as_ref()));
     let url_clone = url.clone();
-    let engine = try!(self.get_engine_for_url(&url_clone));
-    engine.get_raw(self, &mut url)
+    let bin = try!(self.get_engine_for_url(&url_clone));
+    let files = try!(bin.produce_raw_contents(self, &mut url));
+    Ok(files.join())
   }
 
   pub fn get_output(&self) -> Result<String> {
@@ -169,6 +182,85 @@ impl Bins {
     }
     let to_paste = try!(self.get_to_paste());
     let engine = try!(self.get_engine());
-    engine.upload(self, &to_paste)
+    let upload_url = if to_paste.len() > 1 {
+      try!(engine.upload_all(self, to_paste))
+    } else if to_paste.len() == 1 {
+      let file = &to_paste[0];
+      try!(engine.upload_paste(self, file.clone())) // FIXME: shouldn't have to use clone
+    } else {
+      return Err("no files to upload".into());
+    };
+    Ok(upload_url.as_str().to_owned())
+  }
+}
+
+#[derive(Clone)]
+pub struct FlexibleRange {
+  pub ranges: Vec<Range<usize>>
+}
+
+impl FlexibleRange {
+  pub fn parse<S: Into<String>>(string: S) -> Result<FlexibleRange> {
+    let string = string.into();
+    let parts = string.split(',').map(|s| s.trim());
+    let mut range: Vec<Range<usize>> = Vec::new();
+    for part in parts {
+      let bounds = part.split('-').map(|s| s.trim()).collect::<Vec<_>>();
+      match bounds.len() {
+        1 => {
+          let num = bounds[0];
+          if num.is_empty() {
+            return Err("empty part in range".into());
+          }
+          let num = try!(num.parse::<usize>());
+          range.push(num..num + 1);
+        }
+        2 => {
+          let lower = bounds[0];
+          let upper = bounds[1];
+          if lower.is_empty() || upper.is_empty() {
+            return Err("incomplete part in range".into());
+          }
+          let lower: usize = try!(lower.parse());
+          let upper: usize = try!(upper.parse());
+          let r: Range<usize> = if lower > upper {
+            lower + 1..upper
+          } else {
+            lower..upper + 1
+          };
+          range.push(r);
+        }
+        _ => return Err("too many dashes in range".into())
+      }
+    }
+    Ok(FlexibleRange { ranges: range })
+  }
+}
+
+impl Iterator for FlexibleRange {
+  type Item = usize;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    if self.ranges.len() < 1 {
+      return None;
+    }
+    let n = {
+      let mut range = &mut self.ranges[0];
+      if range.start > range.end {
+        let normalized = range.end..range.start;
+        let ret = normalized.rev().next();
+        if ret.is_some() {
+          range.start -= 1;
+        }
+        ret
+      } else {
+        range.next()
+      }
+    };
+    if n.is_none() {
+      self.ranges.remove(0);
+      return self.next();
+    }
+    n
   }
 }

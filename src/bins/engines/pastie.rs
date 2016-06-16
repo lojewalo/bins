@@ -1,62 +1,22 @@
+use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices};
 use bins::error::*;
+use bins::network::download::{Downloader, ModifyDownloadRequest};
+use bins::network::upload::{ModifyUploadRequest, Uploader};
+use bins::network::{self, RequestModifiers};
 use bins::{Bins, PasteFile};
-use bins::engines::Engine;
-use hyper::client::Response;
-use bins::engines::indexed::{IndexedUpload, UploadsIndices, ProducesUrl, ProducesBody};
-use bins::engines::indexed::{ChecksIndices, IndexedDownload, DownloadsFile};
-use hyper::header::{Headers, ContentType};
 use hyper::Url;
 use url::form_urlencoded;
+use hyper::header::{Headers, ContentType};
 
-pub struct Pastie {
-  indexed_upload: IndexedUpload
-}
-
-unsafe impl Sync for Pastie {}
+pub struct Pastie;
 
 impl Pastie {
   pub fn new() -> Self {
-    let mut headers = Headers::new();
-    headers.set(ContentType::form_url_encoded());
-    Pastie {
-      indexed_upload: IndexedUpload {
-        url: String::from("http://pastie.org/pastes"),
-        headers: headers,
-        url_producer: Box::new(PastieUrlProducer {}),
-        body_producer: Box::new(PastieBodyProducer {})
-      }
-    }
+    Pastie {}
   }
 }
 
-struct PastieUrlProducer { }
-
-impl ProducesUrl for PastieUrlProducer {
-  fn produce_url(&self, _: &Bins, res: Response, _: String) -> Result<String> {
-    Ok(res.url.as_str().to_owned())
-  }
-}
-
-struct PastieBodyProducer { }
-
-impl ProducesBody for PastieBodyProducer {
-  fn produce_body(&self, bins: &Bins, data: &PasteFile) -> Result<String> {
-    Ok(form_urlencoded::Serializer::new(String::new())
-      .append_pair("paste[body]", &data.data)
-      .append_pair("paste[authorization]", "burger")
-      .append_pair("paste[restricted]",
-                   if bins.arguments.private {
-                     "1"
-                   } else {
-                     "0"
-                   })
-      .finish())
-  }
-}
-
-impl ChecksIndices for Pastie {}
-
-impl Engine for Pastie {
+impl Bin for Pastie {
   fn get_name(&self) -> &str {
     "pastie"
   }
@@ -64,12 +24,19 @@ impl Engine for Pastie {
   fn get_domain(&self) -> &str {
     "pastie.org"
   }
+}
 
-  fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
-    self.indexed_upload.upload(bins, data)
+impl UploadContent for Pastie {
+  fn upload_paste(&self, bins: &Bins, content: PasteFile) -> Result<Url> {
+    let url = try!(network::parse_url("http://pastie.org/pastes"));
+    let response = try!(self.upload(&url, bins, &content));
+    Ok(response.url.clone())
   }
+}
 
-  fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String> {
+impl ConvertUrlsToRawUrls for Pastie {
+  fn convert_url_to_raw_url(&self, url: &Url) -> Result<Url> {
+    let mut url = url.clone();
     let new_path = {
       let path = url.path();
       if path.starts_with("/private") {
@@ -83,20 +50,40 @@ impl Engine for Pastie {
       }
     };
     url.set_path(&new_path);
-    let download = IndexedDownload {
-      url: String::from(url.as_str()),
-      headers: Headers::new(),
-      target: None
-    };
-    let downloaded = try!(download.download());
-    match self.check_index(bins, &downloaded) {
-      Ok(mut new_url) => return self.get_raw(bins, &mut new_url),
-      Err(e) => {
-        if let ErrorKind::InvalidIndexError = *e.kind() {} else {
-          return Err(e);
-        }
-      }
-    }
-    Ok(downloaded)
+    Ok(url)
   }
 }
+
+impl ModifyUploadRequest for Pastie {
+  fn modify_request<'a>(&'a self, bins: &Bins, content: &PasteFile) -> Result<RequestModifiers> {
+    let body = form_urlencoded::Serializer::new(String::new())
+      .append_pair("paste[body]", &content.data)
+      .append_pair("paste[authorization]", "burger")
+      .append_pair("paste[restricted]",
+                   if bins.arguments.private {
+                     "1"
+                   } else {
+                     "0"
+                   })
+      .finish();
+    let mut headers = Headers::new();
+    headers.set(ContentType::form_url_encoded());
+    Ok(RequestModifiers {
+      body: Some(body),
+      headers: Some(headers),
+      .. RequestModifiers::default()
+    })
+  }
+}
+
+unsafe impl Sync for Pastie {}
+
+impl UsesIndices for Pastie {}
+
+impl ProduceRawContent for Pastie {}
+
+impl Uploader for Pastie {}
+
+impl Downloader for Pastie {}
+
+impl ModifyDownloadRequest for Pastie {}

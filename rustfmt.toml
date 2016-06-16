@@ -7,3 +7,4 @@ struct_lit_trailing_comma = "Never"
 enum_trailing_comma = false
 match_block_trailing_comma  = false
 match_wildcard_trailing_comma = false
+reorder_imports = true

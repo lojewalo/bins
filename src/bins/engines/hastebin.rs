@@ -1,58 +1,21 @@
+use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices};
 use bins::error::*;
+use bins::network::download::{Downloader, ModifyDownloadRequest};
+use bins::network::upload::{ModifyUploadRequest, Uploader};
+use bins::network::{self, RequestModifiers};
 use bins::{Bins, PasteFile};
-use bins::engines::Engine;
-use hyper::client::Response;
-use rustc_serialize::json::Json;
-use bins::engines::indexed::{IndexedUpload, UploadsIndices, ProducesUrl, ProducesBody};
-use bins::engines::indexed::{ChecksIndices, IndexedDownload, DownloadsFile};
-use hyper::header::Headers;
 use hyper::Url;
+use rustc_serialize::json;
 
-pub struct Hastebin {
-  indexed_upload: IndexedUpload
-}
+pub struct Hastebin;
 
 impl Hastebin {
   pub fn new() -> Self {
-    Hastebin {
-      indexed_upload: IndexedUpload {
-        url: String::from("http://hastebin.com/documents"),
-        headers: Headers::new(),
-        url_producer: Box::new(HastebinUrlProducer {}),
-        body_producer: Box::new(HastebinBodyProducer {})
-      }
-    }
+    Hastebin {}
   }
 }
 
-unsafe impl Sync for Hastebin {}
-
-struct HastebinUrlProducer { }
-
-impl ProducesUrl for HastebinUrlProducer {
-  fn produce_url(&self, _: &Bins, res: Response, data: String) -> Result<String> {
-    let raw_response = try!(Json::from_str(&data).map_err(|e| e.to_string()));
-    let response = some_or_err!(raw_response.as_object(),
-                                "response was not a json object".into());
-    let raw_key = some_or_err!(response.get("key"), "no key".into());
-    let key = some_or_err!(raw_key.as_string(), "key was not a string".into());
-    let scheme = res.url.scheme();
-    let host = some_or_err!(res.url.host_str(), "no host string".into());
-    Ok(format!("{}://{}/{}", scheme, host, key))
-  }
-}
-
-struct HastebinBodyProducer { }
-
-impl ProducesBody for HastebinBodyProducer {
-  fn produce_body(&self, _: &Bins, data: &PasteFile) -> Result<String> {
-    Ok(data.clone().data)
-  }
-}
-
-impl ChecksIndices for Hastebin {}
-
-impl Engine for Hastebin {
+impl Bin for Hastebin {
   fn get_name(&self) -> &str {
     "hastebin"
   }
@@ -60,30 +23,57 @@ impl Engine for Hastebin {
   fn get_domain(&self) -> &str {
     "hastebin.com"
   }
+}
 
-  fn upload(&self, bins: &Bins, data: &[PasteFile]) -> Result<String> {
-    self.indexed_upload.upload(bins, data)
-  }
+#[derive(RustcDecodable)]
+struct HastebinResponse {
+  key: String
+}
 
-  fn get_raw(&self, bins: &Bins, url: &mut Url) -> Result<String> {
-    let new_path = {
-      String::from("/raw") + url.path().split('.').collect::<Vec<_>>()[0]
-    };
-    url.set_path(new_path.as_ref());
-    let download = IndexedDownload {
-      url: String::from(url.as_str()),
-      headers: Headers::new(),
-      target: None
-    };
-    let downloaded = try!(download.download());
-    match self.check_index(bins, &downloaded) {
-      Ok(mut new_url) => return self.get_raw(bins, &mut new_url),
-      Err(e) => {
-        if let ErrorKind::InvalidIndexError = *e.kind() {} else {
-          return Err(e);
-        }
-      }
-    }
-    Ok(downloaded)
+impl UploadContent for Hastebin {
+  fn upload_paste(&self, bins: &Bins, content: PasteFile) -> Result<Url> {
+    let url = try!(network::parse_url("http://hastebin.com/documents"));
+    let mut response = try!(self.upload(&url, bins, &content));
+    let json = try!(network::read_response(&mut response));
+    let content: HastebinResponse = try!(json::decode(&json));
+    let scheme = url.scheme();
+    let domain = some_or_err!(url.domain(), "response had no domain".into());
+    Ok(try!(network::parse_url(format!("{}://{}/{}", scheme, domain, content.key))))
   }
 }
+
+impl ConvertUrlsToRawUrls for Hastebin {
+  fn convert_url_to_raw_url(&self, url: &Url) -> Result<Url> {
+    let mut u = url.clone();
+    let name = {
+      let segments = some_or_err!(u.path_segments().and_then(|s| s.last()),
+                                  "url was root url".into());
+      let parts = segments.split('.').collect::<Vec<_>>();
+      if parts.len() > 1 {
+        parts[..parts.len() - 1].join(".")
+      } else {
+        parts[0].to_owned()
+      }
+    };
+    u.set_path(format!("/raw/{}", name).as_str());
+    Ok(u)
+  }
+}
+
+impl ModifyUploadRequest for Hastebin {
+  fn modify_request<'a>(&'a self, _: &Bins, content: &PasteFile) -> Result<RequestModifiers> {
+    Ok(RequestModifiers { body: Some(content.data.clone()), ..RequestModifiers::default() })
+  }
+}
+
+unsafe impl Sync for Hastebin {}
+
+impl UsesIndices for Hastebin {}
+
+impl ProduceRawContent for Hastebin {}
+
+impl Uploader for Hastebin {}
+
+impl Downloader for Hastebin {}
+
+impl ModifyDownloadRequest for Hastebin {}

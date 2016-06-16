@@ -1,9 +1,10 @@
-use std::process;
-use clap::{App, Arg};
-use toml::Value;
 use bins::configuration::BetterLookups;
 use bins::engines;
 use bins::error::*;
+use bins::FlexibleRange;
+use clap::{App, Arg};
+use std::process;
+use toml::Value;
 
 pub struct Arguments {
   pub files: Vec<String>,
@@ -13,7 +14,10 @@ pub struct Arguments {
   pub auth: bool,
   pub copy: bool,
   pub input: Option<String>,
-  pub nth: Option<usize>
+  pub range: Option<FlexibleRange>,
+  pub raw_urls: bool,
+  pub urls: bool,
+  pub all: bool
 }
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
@@ -55,7 +59,10 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
     auth: config.lookup_bool_or("defaults.auth", true),
     copy: config.lookup_bool_or("defaults.copy", false),
     input: None,
-    nth: None
+    range: None,
+    raw_urls: false,
+    urls: false,
+    all: false
   };
   let name = get_name();
   let version = get_version();
@@ -96,7 +103,7 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
       .long("service")
       .help("pastebin service to use")
       .takes_value(true)
-      .possible_values(&*engines::get_engine_names())
+      .possible_values(&*engines::get_bin_names())
       .required(arguments.service.is_none()))
     .arg(Arg::with_name("list-services")
       .short("l")
@@ -110,20 +117,37 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
       .takes_value(true)
       .value_name("url")
       .conflicts_with_all(&["auth", "anon", "public", "private", "message", "service"]))
-    .arg(Arg::with_name("nth")
+    .arg(Arg::with_name("range")
       .short("n")
-      .long("nth")
-      .help("chooses the file to get in input mode, starting from 0")
+      .long("range")
+      .help("chooses the files to get in input mode, starting from 0")
       .takes_value(true)
-      .value_name("index")
+      .value_name("range")
+      .use_delimiter(false)
       .requires("input")
-      .conflicts_with("files"));
+      .conflicts_with("files"))
+    .arg(Arg::with_name("all")
+      .short("L")
+      .long("all")
+      .requires("input")
+      .conflicts_with_all(&["files", "range"]))
+    .arg(Arg::with_name("raw-urls")
+      .short("r")
+      .long("raw-urls")
+      .help("gets the raw urls instead of the content in input mode")
+      .requires("input"))
+    .arg(Arg::with_name("urls")
+      .short("u")
+      .long("urls")
+      .help("gets the urls instead of the content in input mode")
+      .requires("input")
+      .conflicts_with("raw-urls"));
   for arg in get_clipboard_args() {
     app = app.arg(arg);
   }
   let res = app.get_matches();
   if res.is_present("list-services") {
-    println!("gist\nhastebin\npastebin\npastie\nsprunge");
+    println!("{}", engines::get_bin_names().join("\n"));
     process::exit(0);
   }
   if let Some(files) = res.values_of("files") {
@@ -138,10 +162,12 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
   if let Some(input) = res.value_of("input") {
     arguments.input = Some(input.to_owned());
   }
-  if let Some(nth) = res.value_of("nth") {
-    let nth = try!(nth.parse::<usize>().map_err(|_| "nth argument was not a number"));
-    arguments.nth = Some(nth);
+  if let Some(range) = res.value_of("range") {
+    arguments.range = Some(try!(FlexibleRange::parse(range)));
   }
+  arguments.raw_urls = res.is_present("raw-urls");
+  arguments.urls = res.is_present("urls");
+  arguments.all = res.is_present("all");
   if res.is_present("private") {
     arguments.private = true;
   } else if res.is_present("public") {
