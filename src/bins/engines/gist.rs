@@ -41,10 +41,10 @@ impl Gist {
     Ok(try!(network::parse_url(url)))
   }
 
-  fn get_gist(&self, url: &Url) -> Result<GistUpload> {
+  fn get_gist(&self, bins: &Bins, url: &Url) -> Result<GistUpload> {
     let id = some_or_err!(url.path_segments().and_then(|r| r.last()), "could not get path of url".into());
     let url = try!(network::parse_url(format!("https://api.github.com/gists/{}", id)));
-    let mut res = try!(self.download(&url));
+    let mut res = try!(self.download(bins, &url));
     let content = try!(network::read_response(&mut res));
     Ok(try!(json::decode(&content)))
   }
@@ -61,17 +61,17 @@ impl Bin for Gist {
 }
 
 impl ConvertUrlsToRawUrls for Gist {
-  fn convert_url_to_raw_url(&self, _: &Url) -> Result<Url> {
+  fn convert_url_to_raw_url(&self, _: &Bins, _: &Url) -> Result<Url> {
     // this should never, ever be called
     Err("gist urls are not a one-to-one conversion (this is a bug)".into())
   }
 
-  fn convert_urls_to_raw_urls(&self, urls: Vec<&Url>) -> Result<Vec<Url>> {
+  fn convert_urls_to_raw_urls(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<Url>> {
     if urls.len() != 1 {
       return Err("multiple gist urls given (this is a bug)".into());
     }
     let url = urls[0];
-    let remote_upload: GistUpload = try!(self.get_gist(&url));
+    let remote_upload: GistUpload = try!(self.get_gist(bins, &url));
     some_or_err!(remote_upload.files.iter().map(|(_, r)| r.raw_url.clone().map(network::parse_url)).collect(),
                  "a file in the gist did not have a raw url".into())
   }
@@ -90,8 +90,8 @@ impl UploadBatchContent for Gist {
 }
 
 impl ProduceRawInfo for Gist {
-  fn produce_raw_info(&self, _: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
-    let raw_urls = try!(self.convert_urls_to_raw_urls(vec![url]));
+  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
+    let raw_urls = try!(self.convert_urls_to_raw_urls(bins, vec![url]));
     Ok(try!(raw_urls.iter()
       .map(|u| {
         let name = some_or_err!(u.path_segments().and_then(|s| s.last()),
@@ -112,11 +112,11 @@ impl ProduceRawInfo for Gist {
 }
 
 impl ProduceInfo for Gist {
-  fn produce_info(&self, _: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
+  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
     lazy_static! {
       static ref GOOD_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz0123456789-_";
     }
-    let gist = try!(self.get_gist(url));
+    let gist = try!(self.get_gist(bins, url));
     let html_url = some_or_err!(gist.html_url, "no html_url from gist".into());
     gist.files
       .iter()
@@ -149,7 +149,7 @@ impl ProduceRawContent for Gist {}
 impl Uploader for Gist {}
 
 impl ModifyDownloadRequest for Gist {
-  fn modify_request(&self) -> Result<RequestModifiers> {
+  fn modify_request(&self, _: &Bins) -> Result<RequestModifiers> {
     let mut headers = Headers::new();
     headers.set(UserAgent(String::from("bins")));
     Ok(RequestModifiers { headers: Some(headers), ..RequestModifiers::default() })

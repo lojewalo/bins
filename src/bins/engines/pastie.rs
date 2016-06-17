@@ -35,7 +35,7 @@ impl UploadContent for Pastie {
 }
 
 impl ConvertUrlsToRawUrls for Pastie {
-  fn convert_url_to_raw_url(&self, url: &Url) -> Result<Url> {
+  fn convert_url_to_raw_url(&self, _: &Bins, url: &Url) -> Result<Url> {
     let mut url = url.clone();
     let new_path = {
       let path = url.path();

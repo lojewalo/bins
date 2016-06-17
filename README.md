@@ -3,7 +3,8 @@
 *A tool for pasting from the terminal.*
 
  Supports [GitHub Gist](https://gist.github.com/), [Pastebin](http://pastebin.com/), [Pastie](http://pastie.org),
- [Hastebin](http://hastebin.com/), and [sprunge](http://sprunge.us/).
+ [Hastebin](http://hastebin.com/), [sprunge](http://sprunge.us/),
+ and [Bitbucket snippets](https://bitbucket.org/snippets/).
 
 ---
 

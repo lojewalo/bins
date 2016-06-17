@@ -32,7 +32,7 @@ impl UploadUrl for Sprunge {
 }
 
 impl ConvertUrlsToRawUrls for Sprunge {
-  fn convert_url_to_raw_url(&self, url: &Url) -> Result<Url> {
+  fn convert_url_to_raw_url(&self, _: &Bins, url: &Url) -> Result<Url> {
     let mut u = url.clone();
     u.set_query(None);
     Ok(u)

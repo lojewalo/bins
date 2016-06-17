@@ -40,7 +40,7 @@ impl UploadContent for Pastebin {
 }
 
 impl ConvertUrlsToRawUrls for Pastebin {
-  fn convert_url_to_raw_url(&self, url: &Url) -> Result<Url> {
+  fn convert_url_to_raw_url(&self, _: &Bins, url: &Url) -> Result<Url> {
     *self.last_url.borrow_mut() = Some(url.as_str().to_owned());
     let mut url = url.clone();
     let new_path = {
@@ -90,7 +90,7 @@ impl Uploader for Pastebin {}
 impl Downloader for Pastebin {}
 
 impl ModifyDownloadRequest for Pastebin {
-  fn modify_request(&self) -> Result<RequestModifiers> {
+  fn modify_request(&self, _: &Bins) -> Result<RequestModifiers> {
     let mut headers = Headers::new();
     let url = self.last_url.borrow_mut();
     if url.is_some() {

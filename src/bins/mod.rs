@@ -9,6 +9,7 @@ pub mod network;
 extern crate std;
 extern crate toml;
 
+pub use self::engines::bitbucket::Bitbucket;
 pub use self::engines::gist::Gist;
 pub use self::engines::hastebin::Hastebin;
 pub use self::engines::pastebin::Pastebin;

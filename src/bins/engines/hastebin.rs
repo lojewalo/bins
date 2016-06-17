@@ -60,7 +60,7 @@ impl UploadContent for Hastebin {
 }
 
 impl ConvertUrlsToRawUrls for Hastebin {
-  fn convert_url_to_raw_url(&self, url: &Url) -> Result<Url> {
+  fn convert_url_to_raw_url(&self, _: &Bins, url: &Url) -> Result<Url> {
     let mut u = url.clone();
     let name = {
       let segments = some_or_err!(u.path_segments().and_then(|s| s.last()),

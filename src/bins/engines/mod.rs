@@ -1,3 +1,4 @@
+pub mod bitbucket;
 pub mod gist;
 pub mod hastebin;
 pub mod pastebin;
@@ -74,9 +75,9 @@ pub trait ProduceInfo {
 impl<T> ProduceInfo for T
   where T: GenerateIndex + ConvertUrlsToRawUrls + Downloader
 {
-  fn produce_info(&self, _: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
-    let raw_url = try!(self.convert_url_to_raw_url(url));
-    let mut res = try!(self.download(&raw_url));
+  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
+    let raw_url = try!(self.convert_url_to_raw_url(bins, url));
+    let mut res = try!(self.download(&bins, &raw_url));
     let content = try!(network::read_response(&mut res));
     let index = Index::parse(content.clone());
     let mut urls: Vec<RemotePasteFile> = Vec::new();
@@ -125,7 +126,7 @@ impl<T> ProduceRawInfo for T
     let info = try!(self.produce_info(bins, url));
     info.into_iter()
       .map(|r| {
-        let raw_url = try!(self.convert_url_to_raw_url(&r.url));
+        let raw_url = try!(self.convert_url_to_raw_url(bins, &r.url));
         Ok(RemotePasteFile { url: raw_url, ..r })
       })
       .collect()
@@ -133,10 +134,10 @@ impl<T> ProduceRawInfo for T
 }
 
 pub trait ConvertUrlsToRawUrls {
-  fn convert_url_to_raw_url(&self, url: &Url) -> Result<Url>;
+  fn convert_url_to_raw_url(&self, bins: &Bins, url: &Url) -> Result<Url>;
 
-  fn convert_urls_to_raw_urls(&self, urls: Vec<&Url>) -> Result<Vec<Url>> {
-    urls.iter().map(|u| self.convert_url_to_raw_url(u)).collect()
+  fn convert_urls_to_raw_urls(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<Url>> {
+    urls.iter().map(|u| self.convert_url_to_raw_url(bins, u)).collect()
   }
 }
 
@@ -185,7 +186,7 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
       .map(|p| {
         match p.contents.clone() {
           Some(contents) => Ok(contents),
-          None => self.download(&p.url).and_then(|mut r| network::read_response(&mut r)),
+          None => self.download(&bins, &p.url).and_then(|mut r| network::read_response(&mut r)),
         }
       })
       .collect());
@@ -281,6 +282,7 @@ impl Join for Vec<PasteFile> {
 lazy_static! {
   pub static ref BINS: Vec<Box<Bin>> = {
       vec![
+        Box::new(bins::Bitbucket::new()),
         Box::new(bins::Gist::new()),
         Box::new(bins::Sprunge::new()),
         Box::new(bins::Hastebin::new()),

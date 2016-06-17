@@ -40,6 +40,14 @@ api_key = ""
 # Uncomment this line if you want to set a default hastebin server besides `http://hastebin.com`.
 # Using the command-line option `--server` will override this.
 # server = ""
+
+[bitbucket]
+# The username for bitbucket.org.
+username = ""
+
+# The app password for bitbucket.org. Generate one in your Bitbucket settings under App passwords.
+# Only the "snippets write" permission is necessary.
+app_password = ""
 "#;
 
 

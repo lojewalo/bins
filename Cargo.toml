@@ -12,6 +12,7 @@ clipboard_support = ["clipboard"]
 toml = "0.1.30"
 clap = "2.5.2"
 hyper = "0.9"
+rand = "0.3.14"
 rustc-serialize = "0.3.19"
 error-chain = "0.1.12"
 linked-hash-map = "0.0.10"

@@ -7,6 +7,7 @@ extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
 extern crate linked_hash_map;
+extern crate rand;
 extern crate rustc_serialize;
 extern crate toml;
 extern crate url;
