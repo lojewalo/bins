@@ -129,6 +129,7 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
     .arg(Arg::with_name("all")
       .short("L")
       .long("all")
+      .help("gets all files in input mode")
       .requires("input")
       .conflicts_with_all(&["files", "range"]))
     .arg(Arg::with_name("raw-urls")
