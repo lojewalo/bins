@@ -180,13 +180,13 @@ impl Bins {
     if let Some(ref input) = self.arguments.input {
       return self.get_raw(input);
     }
-    let to_paste = try!(self.get_to_paste());
+    let mut to_paste = try!(self.get_to_paste());
     let engine = try!(self.get_engine());
     let upload_url = if to_paste.len() > 1 {
       try!(engine.upload_all(self, to_paste))
     } else if to_paste.len() == 1 {
-      let file = &to_paste[0];
-      try!(engine.upload_paste(self, file.clone())) // FIXME: shouldn't have to use clone
+      let file = to_paste.pop().expect("len() == 1 but no element from pop()");
+      try!(engine.upload_paste(self, file))
     } else {
       return Err("no files to upload".into());
     };
