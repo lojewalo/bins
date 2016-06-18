@@ -132,7 +132,10 @@ impl Configurable for BinsConfiguration {
     try!(try!(File::open(path)).read_to_string(&mut config));
     match config.parse() {
       Ok(v) => Ok(v),
-      Err(e) => Err(e.into_iter().next().map_or("could not parse config".to_owned(), |e| e.to_string()).into()),
+      Err(e) => {
+        let message = e.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join("\n");
+        Err(format!("could not parse config (try making a backup and deleting it)\n\n{}", message).into())
+      },
     }
   }
 }
