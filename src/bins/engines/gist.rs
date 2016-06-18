@@ -123,12 +123,23 @@ impl ProduceInfo for Gist {
     gist.files
       .iter()
       .map(|(n, g)| {
-        let replaced: String = n.to_lowercase().chars().map(|c| if GOOD_CHARS.contains(c) { c } else { '-' }).collect();
+        let replaced: String = n.to_lowercase()
+          .chars()
+          .map(|c| if GOOD_CHARS.contains(c) {
+            c
+          } else {
+            '-'
+          })
+          .collect();
         let new_url = try!(network::parse_url(format!("{}#file-{}", html_url, replaced)));
         Ok(RemotePasteFile {
           name: n.to_owned(),
           url: new_url,
-          contents: if !g.truncated { Some(g.content.clone()) } else { None }
+          contents: if !g.truncated {
+            Some(g.content.clone())
+          } else {
+            None
+          }
         })
       })
       .collect()

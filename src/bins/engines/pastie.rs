@@ -6,7 +6,7 @@ use bins::network::{self, RequestModifiers};
 use bins::{Bins, PasteFile};
 use hyper::Url;
 use url::form_urlencoded;
-use hyper::header::{Headers, ContentType};
+use hyper::header::{ContentType, Headers};
 
 pub struct Pastie;
 
@@ -71,7 +71,7 @@ impl ModifyUploadRequest for Pastie {
     Ok(RequestModifiers {
       body: Some(body),
       headers: Some(headers),
-      .. RequestModifiers::default()
+      ..RequestModifiers::default()
     })
   }
 }

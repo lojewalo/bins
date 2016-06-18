@@ -139,8 +139,10 @@ impl Configurable for BinsConfiguration {
       Ok(v) => Ok(v),
       Err(e) => {
         let message = e.into_iter().map(|x| x.to_string()).collect::<Vec<_>>().join("\n");
-        Err(format!("could not parse config (try making a backup and deleting it)\n\n{}", message).into())
-      },
+        Err(format!("could not parse config (try making a backup and deleting it)\n\n{}",
+                    message)
+          .into())
+      }
     }
   }
 }

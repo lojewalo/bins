@@ -7,7 +7,7 @@ use bins::configuration::BetterLookups;
 use bins::{Bins, PasteFile};
 use hyper::Url;
 use url::form_urlencoded;
-use hyper::header::{Headers, ContentType, Referer};
+use hyper::header::{ContentType, Headers, Referer};
 use std::cell::RefCell;
 
 pub struct Pastebin {
@@ -17,9 +17,7 @@ pub struct Pastebin {
 
 impl Pastebin {
   pub fn new() -> Self {
-    Pastebin {
-      last_url: RefCell::new(None)
-    }
+    Pastebin { last_url: RefCell::new(None) }
   }
 }
 
@@ -77,7 +75,7 @@ impl ModifyUploadRequest for Pastebin {
     Ok(RequestModifiers {
       body: Some(body),
       headers: Some(headers),
-      .. RequestModifiers::default()
+      ..RequestModifiers::default()
     })
   }
 }
@@ -100,9 +98,6 @@ impl ModifyDownloadRequest for Pastebin {
       let url = some_ref_or_err!(url, "no referer (this is a bug)".into());
       headers.set(Referer(url.clone()));
     }
-    Ok(RequestModifiers {
-      headers: Some(headers),
-      .. RequestModifiers::default()
-    })
+    Ok(RequestModifiers { headers: Some(headers), ..RequestModifiers::default() })
   }
 }

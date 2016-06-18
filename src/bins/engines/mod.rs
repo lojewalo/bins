@@ -211,13 +211,14 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
                      }]);
     }
     let names: Vec<String> = raw_info.iter().map(|p| p.name.clone()).collect();
-    let all_contents: Vec<String> =
-      try!(raw_info.iter().map(|p| {
+    let all_contents: Vec<String> = try!(raw_info.iter()
+      .map(|p| {
         match p.contents.clone() {
           Some(contents) => Ok(contents),
-          None => self.download(&p.url).and_then(|mut r| network::read_response(&mut r))
+          None => self.download(&p.url).and_then(|mut r| network::read_response(&mut r)),
         }
-      }).collect());
+      })
+      .collect());
     let files: LinkedHashMap<String, String> = names.into_iter().zip(all_contents.into_iter()).collect();
     Ok(files.into_iter()
       .map(|(name, content)| {
