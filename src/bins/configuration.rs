@@ -115,9 +115,14 @@ impl Configurable for BinsConfiguration {
         let priority = some_or_err!(config_paths.first(),
                                     "no possible config paths computed".into());
         let parent = some_or_err!(priority.parent(), "config file path had no parent".into());
-        let parent_str = some_or_err!(parent.to_str(),
-                                      "config file path parent could not be converted to string".into());
-        try!(fs::create_dir_all(parent_str));
+        if !parent.exists() {
+          let parent_str = some_or_err!(parent.to_str(),
+                                        "config file path parent could not be converted to string".into());
+          try!(fs::create_dir_all(parent_str));
+        }
+        if !parent.is_dir() || parent.is_file() {
+          return Err("config file parent path was not a directory".into());
+        }
         priority.to_path_buf()
       }
     };
