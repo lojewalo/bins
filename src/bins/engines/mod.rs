@@ -13,7 +13,6 @@ use bins::{Bins, PasteFile};
 use hyper::Url;
 use linked_hash_map::LinkedHashMap;
 use std::collections::HashMap;
-use std::io::Read;
 use std::iter::repeat;
 
 pub struct Index {
@@ -51,7 +50,7 @@ impl Index {
                    ErrorKind::InvalidIndexError.into());
     let url_strings: Vec<String> = some_or_err!(split.iter_mut().map(|s| s.nth(0).map(|s| s.to_owned())).collect(),
                                                 ErrorKind::InvalidIndexError.into());
-    let urls: Vec<Url> = try!(url_strings.into_iter().map(|s| network::parse_url(s)).collect());
+    let urls: Vec<Url> = try!(url_strings.into_iter().map(network::parse_url).collect());
     let urls: LinkedHashMap<String, Url> = names.into_iter().zip(urls.into_iter()).collect();
     Ok(Index { files: urls })
   }
@@ -175,7 +174,7 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
       try!(self.produce_raw_info(bins, url))
     };
     let raw_info: Vec<RemotePasteFile> = if raw_info.len() > 1 {
-      if bins.arguments.files.len() > 0 {
+      if !bins.arguments.files.is_empty() {
         let mut map: HashMap<String, RemotePasteFile> =
           raw_info.into_iter().map(|r| (r.name.to_lowercase(), r)).collect();
         try!(bins.arguments
@@ -309,10 +308,10 @@ pub fn get_bin_names<'a>() -> Vec<&'a str> {
   BINS.iter().map(|e| e.get_name()).collect()
 }
 
-pub fn get_bin_by_name<'a>(name: &'a str) -> Option<&Box<Bin>> {
+pub fn get_bin_by_name(name: &str) -> Option<&Box<Bin>> {
   BINS.iter().find(|e| e.get_name().to_lowercase() == name.to_lowercase())
 }
 
-pub fn get_bin_by_domain<'a>(domain: &'a str) -> Option<&Box<Bin>> {
+pub fn get_bin_by_domain(domain: &str) -> Option<&Box<Bin>> {
   BINS.iter().find(|e| e.get_domain().to_lowercase() == domain.to_lowercase())
 }

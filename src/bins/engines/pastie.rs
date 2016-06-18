@@ -70,8 +70,7 @@ impl ModifyUploadRequest for Pastie {
     headers.set(ContentType::form_url_encoded());
     Ok(RequestModifiers {
       body: Some(body),
-      headers: Some(headers),
-      ..RequestModifiers::default()
+      headers: Some(headers)
     })
   }
 }

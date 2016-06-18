@@ -69,7 +69,7 @@ impl Bins {
     };
     match engines::get_bin_by_name(service) {
       Some(engine) => Ok(engine),
-      None => return Err(format!("unknown service \"{}\"", service).into()),
+      None => Err(format!("unknown service \"{}\"", service).into()),
     }
   }
 
@@ -169,10 +169,10 @@ impl Bins {
   }
 
   fn get_raw(&self, url_string: &str) -> Result<String> {
-    let mut url = try!(network::parse_url(url_string.as_ref()));
+    let url = try!(network::parse_url(url_string.as_ref()));
     let url_clone = url.clone();
     let bin = try!(self.get_engine_for_url(&url_clone));
-    let files = try!(bin.produce_raw_contents(self, &mut url));
+    let files = try!(bin.produce_raw_contents(self, &url));
     Ok(files.join())
   }
 

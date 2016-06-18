@@ -65,7 +65,7 @@ impl Bin for Gist {
 impl ConvertUrlsToRawUrls for Gist {
   fn convert_url_to_raw_url(&self, _: &Url) -> Result<Url> {
     // this should never, ever be called
-    return Err("gist urls are not a one-to-one conversion (this is a bug)".into());
+    Err("gist urls are not a one-to-one conversion (this is a bug)".into())
   }
 
   fn convert_urls_to_raw_urls(&self, urls: Vec<&Url>) -> Result<Vec<Url>> {
@@ -74,7 +74,7 @@ impl ConvertUrlsToRawUrls for Gist {
     }
     let url = urls[0];
     let remote_upload: GistUpload = try!(self.get_gist(&url));
-    some_or_err!(remote_upload.files.iter().map(|(_, r)| r.raw_url.clone().map(|s| network::parse_url(s))).collect(),
+    some_or_err!(remote_upload.files.iter().map(|(_, r)| r.raw_url.clone().map(network::parse_url)).collect(),
                  "a file in the gist did not have a raw url".into())
   }
 }

@@ -10,7 +10,7 @@ pub trait Uploader: ModifyUploadRequest {
     let modifiers = try!(self.modify_request(bins, content));
     let body = modifiers.body.unwrap_or("".to_owned());
     let body = body.as_bytes();
-    let headers = modifiers.headers.unwrap_or(Headers::new());
+    let headers = modifiers.headers.unwrap_or_else(Headers::new);
     let client = Client::new();
     let builder = client.post(url.as_str())
       .body(body)
