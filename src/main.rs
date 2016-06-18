@@ -1,25 +1,25 @@
-extern crate toml;
 extern crate clap;
-extern crate hyper;
-extern crate rustc_serialize;
-extern crate url;
-#[macro_use]
-extern crate error_chain;
 #[cfg(feature = "clipboard_support")]
 extern crate clipboard;
-extern crate linked_hash_map;
+#[macro_use]
+extern crate error_chain;
+extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
+extern crate linked_hash_map;
+extern crate rustc_serialize;
+extern crate toml;
+extern crate url;
 
 mod bins;
 
 use bins::error::*;
-use bins::Bins;
 use bins::arguments;
+use bins::Bins;
 use bins::configuration::{BinsConfiguration, Configurable};
-use std::io::Write;
 #[cfg(feature = "clipboard_support")]
 use clipboard::ClipboardContext;
+use std::io::Write;
 
 macro_rules! println_stderr {
   ($fmt:expr) => { { writeln!(std::io::stderr(), $fmt).expect("error writing to stderr"); } };

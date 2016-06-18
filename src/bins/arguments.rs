@@ -1,6 +1,6 @@
+use bins::error::*;
 use bins::configuration::BetterLookups;
 use bins::engines;
-use bins::error::*;
 use bins::FlexibleRange;
 use clap::{App, Arg};
 use std::process;

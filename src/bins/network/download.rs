@@ -1,8 +1,8 @@
 use bins::error::*;
+use bins::network::RequestModifiers;
 use hyper::client::{Client, Response};
 use hyper::header::Headers;
 use hyper::Url;
-use bins::network::RequestModifiers;
 
 pub trait Downloader: ModifyDownloadRequest {
   fn download(&self, url: &Url) -> Result<Response> {

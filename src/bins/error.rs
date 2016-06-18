@@ -1,7 +1,7 @@
-use toml;
-use std::io;
 use hyper;
 use rustc_serialize;
+use std::io;
+use toml;
 
 error_chain! {
   // The type defined for this error. These are the conventional

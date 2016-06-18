@@ -1,14 +1,14 @@
-use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices};
 use bins::error::*;
+use bins::configuration::BetterLookups;
+use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
 use bins::network::{self, RequestModifiers};
-use bins::configuration::BetterLookups;
 use bins::{Bins, PasteFile};
-use hyper::Url;
-use url::form_urlencoded;
 use hyper::header::{ContentType, Headers, Referer};
+use hyper::Url;
 use std::cell::RefCell;
+use url::form_urlencoded;
 
 pub struct Pastebin {
   // totally thread safe

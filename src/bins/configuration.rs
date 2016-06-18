@@ -1,8 +1,8 @@
-use std::io::prelude::*;
-use std::fs::{self, File};
-use std::path::PathBuf;
-use std::env;
 use bins::error::*;
+use std::env;
+use std::fs::{self, File};
+use std::io::prelude::*;
+use std::path::PathBuf;
 use toml::Value;
 
 const DEFAULT_CONFIG_FILE: &'static str = r#"[defaults]

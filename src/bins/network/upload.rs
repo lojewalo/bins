@@ -1,9 +1,9 @@
-use bins::{Bins, PasteFile};
 use bins::error::*;
+use bins::network::RequestModifiers;
+use bins::{Bins, PasteFile};
 use hyper::client::{Client, Response};
 use hyper::header::Headers;
 use hyper::Url;
-use bins::network::RequestModifiers;
 
 pub trait Uploader: ModifyUploadRequest {
   fn upload(&self, url: &Url, bins: &Bins, content: &PasteFile) -> Result<Response> {

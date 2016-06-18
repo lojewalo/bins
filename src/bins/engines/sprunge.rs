@@ -1,7 +1,7 @@
-use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadUrl, UsesIndices};
 use bins::error::*;
-use bins::network::RequestModifiers;
+use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadUrl, UsesIndices};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
+use bins::network::RequestModifiers;
 use bins::network::upload::{ModifyUploadRequest, Uploader};
 use bins::{Bins, PasteFile};
 use hyper::Url;

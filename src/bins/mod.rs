@@ -9,9 +9,9 @@ pub mod network;
 extern crate std;
 extern crate toml;
 
-use bins::arguments::Arguments;
-use bins::engines::*;
 use bins::error::*;
+use bins::arguments::Arguments;
+use bins::engines::Bin;
 use hyper::Url;
 use std::collections::HashMap;
 use std::fs::File;
