@@ -9,6 +9,12 @@ pub mod network;
 extern crate std;
 extern crate toml;
 
+pub use self::engines::gist::Gist;
+pub use self::engines::hastebin::Hastebin;
+pub use self::engines::pastebin::Pastebin;
+pub use self::engines::pastie::Pastie;
+pub use self::engines::sprunge::Sprunge;
+
 use bins::error::*;
 use bins::arguments::Arguments;
 use bins::engines::Bin;

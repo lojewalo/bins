@@ -9,7 +9,7 @@ use bins::error::*;
 use bins::network::download::Downloader;
 use bins::network::upload::Uploader;
 use bins::network;
-use bins::{Bins, PasteFile};
+use bins::{self, Bins, PasteFile};
 use hyper::Url;
 use linked_hash_map::LinkedHashMap;
 use std::collections::HashMap;
@@ -295,11 +295,11 @@ pub trait Bin: Sync + ProduceInfo + ProduceRawContent + UploadBatchContent {
 lazy_static! {
   pub static ref BINS: Vec<Box<Bin>> = {
       vec![
-        Box::new(gist::Gist::new()),
-        Box::new(sprunge::Sprunge::new()),
-        Box::new(hastebin::Hastebin::new()),
-        Box::new(pastebin::Pastebin::new()),
-        Box::new(pastie::Pastie::new())
+        Box::new(bins::Gist::new()),
+        Box::new(bins::Sprunge::new()),
+        Box::new(bins::Hastebin::new()),
+        Box::new(bins::Pastebin::new()),
+        Box::new(bins::Pastie::new())
       ]
   };
 }
