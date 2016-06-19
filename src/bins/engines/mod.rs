@@ -140,7 +140,7 @@ pub trait ConvertUrlsToRawUrls {
 
 /// Produce raw content from a URL to HTML content.
 pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
-  fn produce_raw_contents(&self, bins: &Bins, url: &Url) -> Result<Vec<PasteFile>> {
+  fn produce_raw_contents(&self, bins: &Bins, url: &Url) -> Result<String> {
     let raw_info = if bins.arguments.urls {
       try!(self.produce_info(bins, url))
     } else {
@@ -175,12 +175,8 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
     } else {
       raw_info
     };
-    // TODO: Change this whole system so that we don't have to do stupid stuff like this.
     if bins.arguments.raw_urls || bins.arguments.urls {
-      return Ok(vec![PasteFile {
-                       name: "urls".to_owned(),
-                       data: raw_info.into_iter().map(|r| r.url.as_str().to_owned()).collect::<Vec<_>>().join("\n")
-                     }]);
+      return Ok(raw_info.into_iter().map(|r| r.url.as_str().to_owned()).collect::<Vec<_>>().join("\n"))
     }
     let names: Vec<String> = raw_info.iter().map(|p| p.name.clone()).collect();
     let all_contents: Vec<String> = try!(raw_info.iter()
@@ -199,7 +195,7 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
           data: content.clone()
         }
       })
-      .collect())
+      .collect::<Vec<PasteFile>>().join())
   }
 }
 
@@ -263,6 +259,20 @@ pub trait Bin: Sync + ProduceInfo + ProduceRawContent + UploadBatchContent {
   fn get_name(&self) -> &str;
 
   fn get_domain(&self) -> &str;
+}
+
+trait Join {
+  fn join(&self) -> String;
+}
+
+impl Join for Vec<PasteFile> {
+  fn join(&self) -> String {
+    if self.len() == 1 {
+      self.get(0).expect("len() == 1, but no first element").data.clone()
+    } else {
+      self.into_iter().map(|p| format!("--- {} ---\n\n{}", p.name, p.data)).collect::<Vec<String>>().join("\n\n")
+    }
+  }
 }
 
 lazy_static! {

@@ -41,20 +41,6 @@ impl PasteFile {
   }
 }
 
-trait Join {
-  fn join(&self) -> String;
-}
-
-impl Join for Vec<PasteFile> {
-  fn join(&self) -> String {
-    if self.len() == 1 {
-      self.get(0).expect("len() == 1, but no first element").data.clone()
-    } else {
-      self.into_iter().map(|p| format!("--- {} ---\n\n{}", p.name, p.data)).collect::<Vec<String>>().join("\n\n")
-    }
-  }
-}
-
 pub struct Bins {
   pub config: Value,
   pub arguments: Arguments
@@ -178,8 +164,7 @@ impl Bins {
     let url = try!(network::parse_url(url_string.as_ref()));
     let url_clone = url.clone();
     let bin = try!(self.get_engine_for_url(&url_clone));
-    let files = try!(bin.produce_raw_contents(self, &url));
-    Ok(files.join())
+    Ok(try!(bin.produce_raw_contents(self, &url)))
   }
 
   pub fn get_output(&self) -> Result<String> {
