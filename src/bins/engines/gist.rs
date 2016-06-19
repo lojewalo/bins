@@ -37,14 +37,12 @@ impl Gist {
     let raw_gist = try!(Json::from_str(&s).map_err(|e| e.to_string()));
     let gist = some_or_err!(raw_gist.as_object(),
                             "response was not a json object".into());
-    let html_url = some_or_err!(gist.get("html_url"), "no html_url_key".into());
-    let url = some_or_err!(html_url.as_string(), "html_url was not a string".into());
+    let url = some_or_err!(gist.get("html_url").and_then(|r| r.as_string()), "html_url_key was not present or was not a string".into());
     Ok(try!(network::parse_url(url)))
   }
 
   fn get_gist(&self, url: &Url) -> Result<GistUpload> {
-    let id = some_or_err!(some_or_err!(url.path_segments(), "could not get path of url".into()).last(),
-                          "could not get last path of url".into());
+    let id = some_or_err!(url.path_segments().and_then(|r| r.last()), "could not get path of url".into());
     let url = try!(network::parse_url(format!("https://api.github.com/gists/{}", id)));
     let mut res = try!(self.download(&url));
     let content = try!(network::read_response(&mut res));
