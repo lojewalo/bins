@@ -1,4 +1,3 @@
-// TODO: Rename engines module and basically refactor the entire structure of the crate
 pub mod gist;
 pub mod hastebin;
 pub mod pastebin;
@@ -72,7 +71,6 @@ pub trait ProduceInfo {
   }
 }
 
-// TODO: Fix this so it isn't basically just copy/paste from ProduceRawInfo
 impl<T> ProduceInfo for T
   where T: GenerateIndex + ConvertUrlsToRawUrls + Downloader
 {
@@ -121,39 +119,14 @@ pub trait ProduceRawInfo {
 }
 
 impl<T> ProduceRawInfo for T
-  where T: ConvertUrlsToRawUrls + Downloader + UsesIndices
+  where T: ConvertUrlsToRawUrls + Downloader + UsesIndices + ProduceInfo
 {
-  fn produce_raw_info(&self, _: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
-    let raw_url = try!(self.convert_url_to_raw_url(url));
-    let mut res = try!(self.download(&raw_url));
-    let content = try!(network::read_response(&mut res));
-    let index = Index::parse(content.clone());
-    let mut urls: Vec<RemotePasteFile> = Vec::new();
-    match index {
-      Ok(ref i) => {
-        for (name, url) in i.files.into_iter() {
-          urls.push(RemotePasteFile {
-            name: name.clone(),
-            url: try!(self.convert_url_to_raw_url(url)),
-            contents: None
-          });
-        }
-      }
-      Err(ref e) => {
-        if let ErrorKind::InvalidIndexError = *e.kind() {} else {
-          return Err(e.to_string().into());
-        }
-        let url = raw_url.clone();
-        let name = some_or_err!(url.path_segments().and_then(|s| s.last()),
-                                "paste url was a root url".into());
-        urls.push(RemotePasteFile {
-          name: name.to_owned(),
-          url: url.clone(),
-          contents: Some(content)
-        });
-      }
-    }
-    Ok(urls)
+  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
+    let info = try!(self.produce_info(bins, url));
+    info.into_iter().map(|r| {
+      let raw_url = try!(self.convert_url_to_raw_url(&r.url));
+      Ok(RemotePasteFile { url: raw_url, ..r })
+    }).collect()
   }
 }
 
