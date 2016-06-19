@@ -35,6 +35,11 @@ access_token = ""
 # The API key for pastebin.com. Learn more: http://pastebin.com/api
 # If this is empty, all paste attempts to the pastebin service will fail.
 api_key = ""
+
+[hastebin]
+# Uncomment this line if you want to set a default hastebin server besides `http://hastebin.com`.
+# Using the command-line option `--server` will override this.
+# server = ""
 "#;
 
 

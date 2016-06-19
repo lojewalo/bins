@@ -123,10 +123,12 @@ impl<T> ProduceRawInfo for T
 {
   fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
     let info = try!(self.produce_info(bins, url));
-    info.into_iter().map(|r| {
-      let raw_url = try!(self.convert_url_to_raw_url(&r.url));
-      Ok(RemotePasteFile { url: raw_url, ..r })
-    }).collect()
+    info.into_iter()
+      .map(|r| {
+        let raw_url = try!(self.convert_url_to_raw_url(&r.url));
+        Ok(RemotePasteFile { url: raw_url, ..r })
+      })
+      .collect()
   }
 }
 
@@ -176,7 +178,7 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
       raw_info
     };
     if bins.arguments.raw_urls || bins.arguments.urls {
-      return Ok(raw_info.into_iter().map(|r| r.url.as_str().to_owned()).collect::<Vec<_>>().join("\n"))
+      return Ok(raw_info.into_iter().map(|r| r.url.as_str().to_owned()).collect::<Vec<_>>().join("\n"));
     }
     let names: Vec<String> = raw_info.iter().map(|p| p.name.clone()).collect();
     let all_contents: Vec<String> = try!(raw_info.iter()
@@ -195,7 +197,8 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
           data: content.clone()
         }
       })
-      .collect::<Vec<PasteFile>>().join())
+      .collect::<Vec<PasteFile>>()
+      .join())
   }
 }
 

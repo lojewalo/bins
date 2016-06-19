@@ -1,5 +1,6 @@
-use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices};
 use bins::error::*;
+use bins::configuration::BetterLookups;
+use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
 use bins::network::{self, RequestModifiers};
@@ -12,6 +13,22 @@ pub struct Hastebin;
 impl Hastebin {
   pub fn new() -> Self {
     Hastebin {}
+  }
+
+  fn get_url(&self, bins: &Bins) -> Result<Url> {
+    if let Some(ref url) = bins.arguments.server {
+      let mut url = url.clone();
+      url.set_path("");
+      Ok(url)
+    } else {
+      network::parse_url(bins.config.lookup_str_or("hastebin.server", "http://hastebin.com"))
+    }
+  }
+
+  fn get_upload_url(&self, bins: &Bins) -> Result<Url> {
+    let mut url = try!(self.get_url(bins));
+    url.set_path("/documents");
+    Ok(url)
   }
 }
 
@@ -32,7 +49,7 @@ struct HastebinResponse {
 
 impl UploadContent for Hastebin {
   fn upload_paste(&self, bins: &Bins, content: PasteFile) -> Result<Url> {
-    let url = try!(network::parse_url("http://hastebin.com/documents"));
+    let url = try!(self.get_upload_url(bins));
     let mut response = try!(self.upload(&url, bins, &content));
     let json = try!(network::read_response(&mut response));
     let content: HastebinResponse = try!(json::decode(&json));
