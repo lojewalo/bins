@@ -11,6 +11,7 @@ use hyper::status::StatusCode;
 use hyper::Url;
 use rustc_serialize::json::{self, Json};
 use std::collections::BTreeMap;
+use url::percent_encoding::percent_decode;
 
 pub struct Gist;
 
@@ -37,12 +38,14 @@ impl Gist {
     let raw_gist = try!(Json::from_str(&s).map_err(|e| e.to_string()));
     let gist = some_or_err!(raw_gist.as_object(),
                             "response was not a json object".into());
-    let url = some_or_err!(gist.get("html_url").and_then(|r| r.as_string()), "html_url_key was not present or was not a string".into());
+    let url = some_or_err!(gist.get("html_url").and_then(|r| r.as_string()),
+                           "html_url_key was not present or was not a string".into());
     Ok(try!(network::parse_url(url)))
   }
 
   fn get_gist(&self, bins: &Bins, url: &Url) -> Result<GistUpload> {
-    let id = some_or_err!(url.path_segments().and_then(|r| r.last()), "could not get path of url".into());
+    let id = some_or_err!(url.path_segments().and_then(|r| r.last()),
+                          "could not get path of url".into());
     let url = try!(network::parse_url(format!("https://api.github.com/gists/{}", id)));
     let mut res = try!(self.download(bins, &url));
     let content = try!(network::read_response(&mut res));
@@ -96,8 +99,10 @@ impl ProduceRawInfo for Gist {
       .map(|u| {
         let name = some_or_err!(u.path_segments().and_then(|s| s.last()),
                                 "paste url was a root url");
+        let name =
+          try!(percent_decode(name.as_bytes()).decode_utf8().map_err(|_| "could not decode file name as utf8".into()));
         Ok(RemotePasteFile {
-          name: name.to_owned(),
+          name: name.into_owned(),
           url: u.clone(),
           contents: None
         })

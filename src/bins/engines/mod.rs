@@ -44,10 +44,14 @@ impl Index {
     if lines.len() < 4 {
       return Err(ErrorKind::InvalidIndexError.into());
     }
-    let mut split = lines.iter().skip(3).filter(|s| !s.trim().is_empty()).map(|s| s.split(' ')).collect::<Vec<_>>();
-    let names: Vec<String> =
-      some_or_err!(split.iter_mut().map(|s| s.nth(1).map(|x| x[..x.len() - 1].to_owned())).collect(),
-                   ErrorKind::InvalidIndexError.into());
+    let mut split = lines.iter().skip(3).filter(|s| !s.trim().is_empty()).map(|s| s.split(": ")).collect::<Vec<_>>();
+    let names: Vec<String> = some_or_err!(split.iter_mut()
+                                            .map(|s| {
+                                              s.nth(0)
+                                                .map(|n| n.split(' ').skip(1).collect::<Vec<&str>>().join(" "))
+                                            })
+                                            .collect(),
+                                          ErrorKind::InvalidIndexError.into());
     let url_strings: Vec<String> = some_or_err!(split.iter_mut().map(|s| s.nth(0).map(|s| s.to_owned())).collect(),
                                                 ErrorKind::InvalidIndexError.into());
     let urls: Vec<Url> = try!(url_strings.into_iter().map(network::parse_url).collect());
