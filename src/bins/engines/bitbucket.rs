@@ -86,7 +86,7 @@ impl Bitbucket {
     if value.is_empty() {
       return Err(format!("{} in configuration was empty", key).into());
     }
-    return Ok(value);
+    Ok(value)
   }
 
   fn prepare_headers(&self, boundary: &str, authorization: Authorization<Basic>) -> Headers {
@@ -109,7 +109,7 @@ impl Bitbucket {
     };
     let properties_json = try!(json::encode(&properties).map_err(|e| e.to_string()));
 
-    let mut body = MultipartRelatedBody::new(&boundary);
+    let mut body = MultipartRelatedBody::new(boundary);
     body.add_json(&properties_json);
     for file in data {
       body.add_file(&file.name, file.data.as_bytes());
