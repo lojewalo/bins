@@ -282,8 +282,8 @@ impl Join for Vec<PasteFile> {
 lazy_static! {
   pub static ref BINS: Vec<Box<Bin>> = {
       vec![
-        Box::new(bins::Bitbucket::new()),
         Box::new(bins::Gist::new()),
+        Box::new(bins::Bitbucket::new()),
         Box::new(bins::Sprunge::new()),
         Box::new(bins::Hastebin::new()),
         Box::new(bins::Pastebin::new()),
