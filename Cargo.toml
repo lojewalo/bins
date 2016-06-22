@@ -23,8 +23,8 @@ error-chain = "0.1.12"
 linked-hash-map = "0.0.10"
 lazy_static = "0.2.1"
 cfg-if = "0.1.0"
-url = { git = "https://github.com/servo/rust-url" }
-clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", optional = true }
+url = "1.1.1"
+clipboard = { version = "0.1.2", optional = true }
 
 [build-dependencies]
 git2 = "0.4.3"
