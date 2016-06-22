@@ -20,7 +20,8 @@ pub struct Arguments {
   pub raw_urls: bool,
   pub urls: bool,
   pub all: bool,
-  pub server: Option<Url>
+  pub server: Option<Url>,
+  pub name: Option<String>
 }
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
@@ -66,7 +67,8 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
     raw_urls: false,
     urls: false,
     all: false,
-    server: None
+    server: None,
+    name: None
   };
   let name = get_name();
   let version = get_version();
@@ -152,7 +154,14 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
       .long("server")
       .help("specifies the server to use for the service (only support on hastebin)")
       .takes_value(true)
-      .value_name("server_url"));
+      .value_name("server_url"))
+    .arg(Arg::with_name("name")
+      .short("N")
+      .long("name")
+      .help("specifies a file name for --message or stdin")
+      .takes_value(true)
+      .value_name("name")
+      .conflicts_with("files"));
   for arg in get_clipboard_args() {
     app = app.arg(arg);
   }
@@ -183,6 +192,9 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
       }
     }
     arguments.server = Some(try!(network::parse_url(server).chain_err(|| "invalid --server")));
+  }
+  if let Some(name) = res.value_of("name") {
+    arguments.name = Some(name.to_owned());
   }
   arguments.raw_urls = res.is_present("raw-urls");
   arguments.urls = res.is_present("urls");
