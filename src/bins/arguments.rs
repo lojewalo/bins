@@ -36,22 +36,24 @@ fn get_version() -> String {
   format!("{}{}", version, git_tag)
 }
 
-#[cfg(feature = "clipboard_support")]
-fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
-  vec![Arg::with_name("copy")
-         .short("C")
-         .long("copy")
-         .help("copies the output of the command to the clipboard without a newline")
-         .conflicts_with("no-copy"),
-       Arg::with_name("no-copy")
-         .short("c")
-         .long("no-copy")
-         .help("does not copy the output of the command to the clipboard")]
-}
-
-#[cfg(not(feature = "clipboard_support"))]
-fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
-  vec![]
+cfg_if! {
+  if #[cfg(feature = "clipboard_support")] {
+    fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
+      vec![Arg::with_name("copy")
+             .short("C")
+             .long("copy")
+             .help("copies the output of the command to the clipboard without a newline")
+             .conflicts_with("no-copy"),
+           Arg::with_name("no-copy")
+             .short("c")
+             .long("no-copy")
+             .help("does not copy the output of the command to the clipboard")]
+    }
+  } else {
+    fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
+      Vec::new()
+    }
+  }
 }
 
 pub fn get_arguments(config: &Value) -> Result<Arguments> {
@@ -74,7 +76,7 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
   let version = get_version();
   let mut app = App::new(name.as_ref())
     .version(version.as_ref())
-    .about("A command-line pastebin client")
+    .about("A tool for pasting from the terminal")
     .arg(Arg::with_name("files")
       .help("files to paste")
       .takes_value(true)

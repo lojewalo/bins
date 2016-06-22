@@ -2,6 +2,8 @@ extern crate clap;
 #[cfg(feature = "clipboard_support")]
 extern crate clipboard;
 #[macro_use]
+extern crate cfg_if;
+#[macro_use]
 extern crate error_chain;
 extern crate hyper;
 #[macro_use]

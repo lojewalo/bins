@@ -1,7 +1,12 @@
 [package]
 name = "bins"
 version = "0.1.0"
-authors = ["Kyle Clemens <jkc.clemens@gmail.com>"]
+description = "A tool for pasting from the terminal."
+authors = ["Kyle Clemens <me@kyleclemens.com>"]
+repository = "https://github.com/jkcclemens/bins"
+readme = "README.md"
+license = "MPL-2.0"
+
 build = "build.rs"
 
 [features]
@@ -17,6 +22,7 @@ rustc-serialize = "0.3.19"
 error-chain = "0.1.12"
 linked-hash-map = "0.0.10"
 lazy_static = "0.2.1"
+cfg-if = "0.1.0"
 url = { git = "https://github.com/servo/rust-url" }
 clipboard = { git = "https://github.com/aweinstock314/rust-clipboard", optional = true }
 
