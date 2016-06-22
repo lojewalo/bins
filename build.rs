@@ -37,7 +37,6 @@ fn main() {
     writeln!(&mut io::stderr(), "bins requires at least Rust 1.8.0").unwrap();
     exit(1);
   }
-  let profile = env::var("PROFILE").unwrap();
   let version = get_version();
   let out_dir = env::var("OUT_DIR").unwrap();
   let dest_path = Path::new(&out_dir).join("git_short_tag.rs");
