@@ -124,7 +124,7 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
     .arg(Arg::with_name("range")
       .short("n")
       .long("range")
-      .help("chooses the files to get in input mode, starting from 0")
+      .help("chooses the files to get in input mode, starting from 0 (e.g. \"0\", \"0,1\", \"0-2\", \"2-0,3\")")
       .takes_value(true)
       .value_name("range")
       .use_delimiter(false)
