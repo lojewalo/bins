@@ -35,22 +35,24 @@ fn get_version() -> String {
   format!("{}{}", version, git_tag)
 }
 
-#[cfg(feature = "clipboard_support")]
-fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
-  vec![Arg::with_name("copy")
-         .short("C")
-         .long("copy")
-         .help("copies the output of the command to the clipboard without a newline")
-         .conflicts_with("no-copy"),
-       Arg::with_name("no-copy")
-         .short("c")
-         .long("no-copy")
-         .help("does not copy the output of the command to the clipboard")]
-}
-
-#[cfg(not(feature = "clipboard_support"))]
-fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
-  vec![]
+cfg_if! {
+  if #[cfg(feature = "clipboard_support")] {
+    fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
+      vec![Arg::with_name("copy")
+             .short("C")
+             .long("copy")
+             .help("copies the output of the command to the clipboard without a newline")
+             .conflicts_with("no-copy"),
+           Arg::with_name("no-copy")
+             .short("c")
+             .long("no-copy")
+             .help("does not copy the output of the command to the clipboard")]
+    }
+  } else {
+    fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
+      Vec::new()
+    }
+  }
 }
 
 pub fn get_arguments(config: &Value) -> Result<Arguments> {

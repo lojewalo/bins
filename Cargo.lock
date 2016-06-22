@@ -2,6 +2,7 @@
 name = "bins"
 version = "0.1.0"
 dependencies = [
+ "cfg-if 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clipboard 0.1.2 (git+https://github.com/aweinstock314/rust-clipboard)",
  "error-chain 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
