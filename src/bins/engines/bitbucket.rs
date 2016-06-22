@@ -55,7 +55,7 @@ impl Bitbucket {
 
   fn get_snippet(&self, bins: &Bins, url: &Url) -> Result<Snippet> {
     let segments: Vec<_> = some_or_err!(url.path_segments(), "url has no path".into()).collect();
-    if segments.len() != 3 || segments[0] != "snippets" {
+    if segments.len() < 3 || segments[0] != "snippets" {
       return Err("url path expected to be of form /snippets/{username}/{id}".into());
     }
     let username = segments[1];
