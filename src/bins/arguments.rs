@@ -72,7 +72,7 @@ pub fn get_arguments(config: &Value) -> Result<Arguments> {
   let version = get_version();
   let mut app = App::new(name.as_ref())
     .version(version.as_ref())
-    .about("A command-line pastebin client")
+    .about("A tool for pasting from the terminal")
     .arg(Arg::with_name("files")
       .help("files to paste")
       .takes_value(true)

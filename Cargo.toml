@@ -1,7 +1,12 @@
 [package]
 name = "bins"
 version = "0.1.0"
-authors = ["Kyle Clemens <jkc.clemens@gmail.com>"]
+description = "A tool for pasting from the terminal."
+authors = ["Kyle Clemens <me@kyleclemens.com>"]
+repository = "https://github.com/jkcclemens/bins"
+readme = "README.md"
+license = "MPL-2.0"
+
 build = "build.rs"
 
 [features]
