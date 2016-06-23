@@ -14,6 +14,13 @@
 
 ### Release
 
+#### No Rust
+
+Don't want to install Rust? A precompiled binary may be available for your architecture at the
+[latest release](https://github.com/jkcclemens/bins/releases/latest).
+
+#### Rust
+
 If you want to install the [latest release](https://crates.io/crates/bins) from
 [crates.io](https://crates.io/):
 
