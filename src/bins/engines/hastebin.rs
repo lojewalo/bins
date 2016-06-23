@@ -1,6 +1,6 @@
 use bins::error::*;
 use bins::configuration::BetterLookups;
-use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices};
+use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices, VerifyUrl};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
 use bins::network::{self, RequestModifiers};
@@ -39,6 +39,12 @@ impl Bin for Hastebin {
 
   fn get_domain(&self) -> &str {
     "hastebin.com"
+  }
+}
+
+impl VerifyUrl for Hastebin {
+  fn verify_url(&self, url: &Url) -> bool {
+    self.segments(url).len() == 1
   }
 }
 

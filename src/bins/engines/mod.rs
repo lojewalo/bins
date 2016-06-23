@@ -262,8 +262,20 @@ pub trait UploadUrl {
   fn get_upload_url(&self) -> &str;
 }
 
+pub trait VerifyUrl {
+  fn segments(&self, url: &Url) -> Vec<String> {
+    let segments = match url.path_segments() {
+      Some(s) => s,
+      None => return Vec::new(),
+    };
+    segments.filter(|s| !s.is_empty()).map(|s| s.to_owned()).collect::<Vec<_>>()
+  }
+
+  fn verify_url(&self, url: &Url) -> bool;
+}
+
 /// A bin, which can upload content in raw form and download content in raw and HTML form.
-pub trait Bin: Sync + ProduceInfo + ProduceRawContent + UploadBatchContent {
+pub trait Bin: Sync + ProduceInfo + ProduceRawContent + UploadBatchContent + VerifyUrl {
   fn get_name(&self) -> &str;
 
   fn get_domain(&self) -> &str;

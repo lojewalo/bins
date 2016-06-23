@@ -1,5 +1,5 @@
 use bins::error::*;
-use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadUrl, UsesIndices};
+use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadUrl, UsesIndices, VerifyUrl};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::RequestModifiers;
 use bins::network::upload::{ModifyUploadRequest, Uploader};
@@ -22,6 +22,12 @@ impl Bin for Sprunge {
 
   fn get_domain(&self) -> &str {
     "sprunge.us"
+  }
+}
+
+impl VerifyUrl for Sprunge {
+  fn verify_url(&self, url: &Url) -> bool {
+    self.segments(url).len() == 1
   }
 }
 

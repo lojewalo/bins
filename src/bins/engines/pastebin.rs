@@ -1,6 +1,6 @@
 use bins::error::*;
 use bins::configuration::BetterLookups;
-use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices};
+use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices, VerifyUrl};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
 use bins::network::{self, RequestModifiers};
@@ -28,6 +28,12 @@ impl Bin for Pastebin {
 
   fn get_domain(&self) -> &str {
     "pastebin.com"
+  }
+}
+
+impl VerifyUrl for Pastebin {
+  fn verify_url(&self, url: &Url) -> bool {
+    self.segments(url).len() == 1
   }
 }
 

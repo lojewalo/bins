@@ -1,7 +1,7 @@
 use bins::{Bins, PasteFile};
 use bins::configuration::BetterLookups;
 use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceInfo, ProduceRawContent, ProduceRawInfo, RemotePasteFile,
-                    UploadBatchContent, UploadContent};
+                    UploadBatchContent, UploadContent, VerifyUrl};
 use bins::error::*;
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
@@ -126,6 +126,13 @@ impl Bin for Bitbucket {
 
   fn get_domain(&self) -> &str {
     "bitbucket.org"
+  }
+}
+
+impl VerifyUrl for Bitbucket {
+  fn verify_url(&self, url: &Url) -> bool {
+    let segments = self.segments(url);
+    segments.len() > 2 && segments[0] == "snippets"
   }
 }
 

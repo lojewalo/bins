@@ -1,5 +1,5 @@
 use bins::error::*;
-use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices};
+use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices, VerifyUrl};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
 use bins::network::{self, RequestModifiers};
@@ -23,6 +23,13 @@ impl Bin for Pastie {
 
   fn get_domain(&self) -> &str {
     "pastie.org"
+  }
+}
+
+impl VerifyUrl for Pastie {
+  fn verify_url(&self, url: &Url) -> bool {
+    let segments = self.segments(url);
+    segments.len() == 1 || (segments.len() == 2 && segments[0] == "private")
   }
 }
 

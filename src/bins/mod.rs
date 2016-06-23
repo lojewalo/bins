@@ -167,6 +167,9 @@ impl Bins {
     let url = try!(network::parse_url(url_string.as_ref()));
     let url_clone = url.clone();
     let bin = try!(self.get_engine_for_url(&url_clone));
+    if !bin.verify_url(&url_clone) {
+      return Err(format!("invalid url for {}", bin.get_name()).into());
+    }
     Ok(try!(bin.produce_raw_contents(self, &url)))
   }
 

@@ -1,7 +1,7 @@
 use bins::error::*;
 use bins::configuration::BetterLookups;
 use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceInfo, ProduceRawContent, ProduceRawInfo, RemotePasteFile,
-                    UploadBatchContent, UploadContent};
+                    UploadBatchContent, UploadContent, VerifyUrl};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
 use bins::network::{self, RequestModifiers};
@@ -60,6 +60,13 @@ impl Bin for Gist {
 
   fn get_domain(&self) -> &str {
     "gist.github.com"
+  }
+}
+
+impl VerifyUrl for Gist {
+  fn verify_url(&self, url: &Url) -> bool {
+    let segments = self.segments(url);
+    segments.len() == 1 || segments.len() == 2
   }
 }
 
