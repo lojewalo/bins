@@ -2,10 +2,10 @@
 
 *A tool for pasting from the terminal.*
 
-[![Travis](https://img.shields.io/travis/jkcclemens/bins/master.svg?maxAge=2592000)](https://travis-ci.org/jkcclemens/bins)
-[![Crates.io](https://img.shields.io/crates/v/bins.svg?maxAge=2592000)](https://crates.io/crates/bins)
-[![Crates.io](https://img.shields.io/crates/d/bins.svg?maxAge=2592000)](https://crates.io/crates/bins)
-[![license](https://img.shields.io/github/license/jkcclemens/bins.svg?maxAge=2592000)](https://github.com/jkcclemens/bins/blob/master/LICENSE)
+[![Travis](https://img.shields.io/travis/jkcclemens/bins/master.svg)](https://travis-ci.org/jkcclemens/bins)
+[![Crates.io](https://img.shields.io/crates/v/bins.svg)](https://crates.io/crates/bins)
+[![Crates.io](https://img.shields.io/crates/d/bins.svg)](https://crates.io/crates/bins)
+[![license](https://img.shields.io/github/license/jkcclemens/bins.svg)](https://github.com/jkcclemens/bins/blob/master/LICENSE)
 
  Supports [GitHub Gist](https://gist.github.com/), [Pastebin](http://pastebin.com/), [Pastie](http://pastie.org),
  [Hastebin](http://hastebin.com/), [sprunge](http://sprunge.us/),
