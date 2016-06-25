@@ -20,7 +20,8 @@ pub struct Arguments {
   pub urls: bool,
   pub all: bool,
   pub server: Option<Url>,
-  pub name: Option<String>
+  pub name: Option<String>,
+  pub force: bool
 }
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
@@ -69,7 +70,8 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     urls: false,
     all: false,
     server: None,
-    name: None
+    name: None,
+    force: false
   };
   let name = get_name();
   let version = get_version();
@@ -162,7 +164,12 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
       .help("specifies a file name for --message or stdin")
       .takes_value(true)
       .value_name("name")
-      .conflicts_with("files"));
+      .conflicts_with("files"))
+    .arg(Arg::with_name("force")
+      .short("f")
+      .long("force")
+      .help("overrides warnings about file type or size when uploading")
+      .conflicts_with("input"));
   for arg in get_clipboard_args() {
     app = app.arg(arg);
   }
@@ -200,6 +207,7 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   arguments.raw_urls = res.is_present("raw-urls");
   arguments.urls = res.is_present("urls");
   arguments.all = res.is_present("all");
+  arguments.force = res.is_present("force");
   if res.is_present("private") {
     arguments.private = true;
   } else if res.is_present("public") {

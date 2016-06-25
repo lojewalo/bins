@@ -6,7 +6,18 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use toml::Value;
 
-const DEFAULT_CONFIG_FILE: &'static str = r#"[defaults]
+const DEFAULT_CONFIG_FILE: &'static str = r#"[general]
+# List of file-name patterns to disallow uploading. Bins will not upload any files that match this pattern unless it is
+# forced to with --force.
+#
+# disallowed_file_patterns = ["*.cfg", "*.conf", "*.key"]
+
+# The file size limit for uploads. If any file is larger than this, bins will not upload it unless it is forced to with
+# --force.
+# Supports kB, MB, GB, KiB, MiB, and GiB.
+# file_size_limit = "1MiB"
+
+[defaults]
 # If this is true, all pastes will be created as private or unlisted.
 # Using the command-line option `--public` or `--private` will change this behavior.
 private = true
@@ -60,6 +71,22 @@ impl BinsConfiguration {
     let mut conf = BinsConfiguration { root: Value::Table(BTreeMap::new()) };
     conf.root = try!(conf.parse_config());
     Ok(conf)
+  }
+
+  pub fn get_general_disallowed_file_patterns(&self) -> Option<&[Value]> {
+    let disallowed_patterns = match self.root.lookup("general.disallowed_file_patterns") {
+      Some(v) => v,
+      None => return None,
+    };
+    disallowed_patterns.as_slice()
+  }
+
+  pub fn get_general_file_size_limit(&self) -> Result<Option<u64>> {
+    let string = match self.root.lookup_str("general.file_size_limit") {
+      Some(s) => s,
+      None => return Ok(None),
+    };
+    Ok(Some(try!(BinsConfiguration::convert_size_str_to_bytes(string))))
   }
 
   pub fn get_defaults_private(&self) -> bool {
