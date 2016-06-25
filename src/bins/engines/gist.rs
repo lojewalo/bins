@@ -75,6 +75,7 @@ impl ConvertUrlsToRawUrls for Gist {
     Err("gist urls are not a one-to-one conversion (this is a bug)".into())
   }
 
+  #[cfg_attr(feature = "clippy", allow(needless_return))]
   fn convert_urls_to_raw_urls(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<Url>> {
     if urls.len() != 1 {
       return Err("multiple gist urls given (this is a bug)".into());
