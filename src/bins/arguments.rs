@@ -21,7 +21,8 @@ pub struct Arguments {
   pub all: bool,
   pub server: Option<Url>,
   pub name: Option<String>,
-  pub force: bool
+  pub force: bool,
+  pub number_lines: bool
 }
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
@@ -71,7 +72,8 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     all: false,
     server: None,
     name: None,
-    force: false
+    force: false,
+    number_lines: false
   };
   let name = get_name();
   let version = get_version();
@@ -169,7 +171,12 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
       .short("f")
       .long("force")
       .help("overrides warnings about file type or size when uploading")
-      .conflicts_with("input"));
+      .conflicts_with("input"))
+    .arg(Arg::with_name("number_lines")
+      .short("e")
+      .long("number-lines")
+      .help("display line numbers for each file in input mode")
+      .requires("input"));
   for arg in get_clipboard_args() {
     app = app.arg(arg);
   }
@@ -208,6 +215,7 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   arguments.urls = res.is_present("urls");
   arguments.all = res.is_present("all");
   arguments.force = res.is_present("force");
+  arguments.number_lines = res.is_present("number_lines");
   if res.is_present("private") {
     arguments.private = true;
   } else if res.is_present("public") {

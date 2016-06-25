@@ -199,12 +199,22 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
       .map(|(name, content)| {
         PasteFile {
           name: name.clone(),
-          data: content.clone()
+          data: if bins.arguments.number_lines { number_lines(content.clone()) } else { content.clone() }
         }
       })
       .collect::<Vec<PasteFile>>()
       .join())
   }
+}
+
+fn number_lines(string: String) -> String {
+  let lines: Vec<&str> = string.split("\n").collect();
+  let num_lines = lines.len();
+  let zeroes: String = repeat(" ").take(num_lines.to_string().len()).collect();
+  lines.into_iter().enumerate().map(|(i, l)| {
+    let i = i + 1;
+    format!("{}{}  {}", &zeroes[0..zeroes.len() - i.to_string().len()], i, l)
+  }).collect::<Vec<_>>().join("\n")
 }
 
 /// Produce a URL to HTML content from raw content.
