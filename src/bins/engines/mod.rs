@@ -87,7 +87,7 @@ impl<T> ProduceInfo for T
     let mut urls: Vec<RemotePasteFile> = Vec::new();
     match index {
       Ok(ref i) => {
-        for (name, url) in i.files.into_iter() {
+        for (name, url) in i.files.clone().into_iter() {
           urls.push(RemotePasteFile {
             name: name.clone(),
             url: url.clone(),
