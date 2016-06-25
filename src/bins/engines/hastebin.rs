@@ -1,5 +1,4 @@
 use bins::error::*;
-use bins::configuration::BetterLookups;
 use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices, VerifyUrl};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
@@ -21,7 +20,7 @@ impl Hastebin {
       url.set_path("");
       Ok(url)
     } else {
-      network::parse_url(bins.config.lookup_str_or("hastebin.server", "http://hastebin.com"))
+      network::parse_url(bins.config.get_hastebin_server().unwrap_or("http://hastebin.com"))
     }
   }
 

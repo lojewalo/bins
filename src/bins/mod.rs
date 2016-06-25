@@ -18,6 +18,7 @@ pub use self::engines::sprunge::Sprunge;
 
 use bins::error::*;
 use bins::arguments::Arguments;
+use bins::configuration::BinsConfiguration;
 use bins::engines::Bin;
 use hyper::Url;
 use std::collections::HashMap;
@@ -25,7 +26,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::ops::Range;
 use std::path::Path;
-use toml::Value;
 
 #[derive(Clone)]
 pub struct PasteFile {
@@ -43,12 +43,12 @@ impl PasteFile {
 }
 
 pub struct Bins {
-  pub config: Value,
+  pub config: BinsConfiguration,
   pub arguments: Arguments
 }
 
 impl Bins {
-  pub fn new(config: Value, arguments: Arguments) -> Self {
+  pub fn new(config: BinsConfiguration, arguments: Arguments) -> Self {
     Bins {
       config: config,
       arguments: arguments

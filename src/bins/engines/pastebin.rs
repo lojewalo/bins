@@ -1,5 +1,4 @@
 use bins::error::*;
-use bins::configuration::BetterLookups;
 use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceRawContent, UploadContent, UsesIndices, VerifyUrl};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
@@ -59,7 +58,7 @@ impl ConvertUrlsToRawUrls for Pastebin {
 
 impl ModifyUploadRequest for Pastebin {
   fn modify_request<'a>(&'a self, bins: &Bins, content: &PasteFile) -> Result<RequestModifiers> {
-    let api_key = some_or_err!(bins.config.lookup_str("pastebin.api_key"),
+    let api_key = some_or_err!(bins.config.get_pastebin_api_key(),
                                "no pastebin.api_key defined in configuration file".into());
     if api_key.is_empty() {
       return Err("pastebin.api_key was empty".into());

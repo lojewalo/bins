@@ -1,5 +1,4 @@
 use bins::{Bins, PasteFile};
-use bins::configuration::BetterLookups;
 use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceInfo, ProduceRawContent, ProduceRawInfo, RemotePasteFile,
                     UploadBatchContent, UploadContent, VerifyUrl};
 use bins::error::*;
@@ -72,21 +71,17 @@ impl Bitbucket {
   }
 
   fn authorization(&self, bins: &Bins) -> Result<Authorization<Basic>> {
-    let username = try!(self.config_value(bins, "bitbucket.username"));
-    let app_password = try!(self.config_value(bins, "bitbucket.app_password"));
+    let username = some_or_err!(bins.config.get_bitbucket_username(),
+                                "no Bitbucket username set in configuration".into());
+    let app_password = some_or_err!(bins.config.get_bitbucket_app_password(),
+                                    "no Bitbucket app password set in configuration".into());
+    if username.is_empty() || app_password.is_empty() {
+      return Err("Bitbucket username or app_password in configuration was empty".into());
+    }
     Ok(Authorization(Basic {
       username: username.to_string(),
       password: Some(app_password.to_string())
     }))
-  }
-
-  fn config_value<'a>(&self, bins: &'a Bins, key: &'a str) -> Result<&'a str> {
-    let value = some_or_err!(bins.config.lookup_str(key),
-                             format!("no {} set in configuration", key).into());
-    if value.is_empty() {
-      return Err(format!("{} in configuration was empty", key).into());
-    }
-    Ok(value)
   }
 
   fn prepare_headers(&self, boundary: &str, authorization: Authorization<Basic>) -> Headers {

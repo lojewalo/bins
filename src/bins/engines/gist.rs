@@ -1,5 +1,4 @@
 use bins::error::*;
-use bins::configuration::BetterLookups;
 use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceInfo, ProduceRawContent, ProduceRawInfo, RemotePasteFile,
                     UploadBatchContent, UploadContent, VerifyUrl};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
@@ -174,8 +173,8 @@ impl ModifyUploadRequest for Gist {
     headers.set(ContentType::json());
     headers.set(UserAgent(String::from("bins")));
     if bins.arguments.auth {
-      if let Some(username) = bins.config.lookup_str("gist.username") {
-        if let Some(token) = bins.config.lookup_str("gist.access_token") {
+      if let Some(username) = bins.config.get_gist_username() {
+        if let Some(token) = bins.config.get_gist_access_token() {
           if !username.is_empty() && !token.is_empty() {
             headers.set(Authorization(Basic {
               username: username.to_owned(),

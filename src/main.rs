@@ -19,7 +19,7 @@ mod bins;
 use bins::error::*;
 use bins::arguments;
 use bins::Bins;
-use bins::configuration::{BinsConfiguration, Configurable};
+use bins::configuration::BinsConfiguration;
 #[cfg(feature = "clipboard_support")]
 use clipboard::ClipboardContext;
 use std::io::Write;
@@ -36,8 +36,7 @@ macro_rules! or_exit {
 }
 
 fn make_bins() -> Result<Bins> {
-  let configuration = BinsConfiguration::new();
-  let config = try!(configuration.parse_config());
+  let config = try!(BinsConfiguration::new());
   let arguments = try!(arguments::get_arguments(&config));
   Ok(Bins::new(config, arguments))
 }

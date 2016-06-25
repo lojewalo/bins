@@ -1,12 +1,11 @@
 use bins::error::*;
-use bins::configuration::BetterLookups;
+use bins::configuration::BinsConfiguration;
 use bins::engines;
 use bins::FlexibleRange;
 use bins::network;
 use clap::{App, Arg};
 use hyper::Url;
 use std::process;
-use toml::Value;
 
 pub struct Arguments {
   pub files: Vec<String>,
@@ -56,14 +55,14 @@ cfg_if! {
   }
 }
 
-pub fn get_arguments(config: &Value) -> Result<Arguments> {
+pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   let mut arguments = Arguments {
     files: Vec::new(),
     message: None,
-    service: config.lookup_str("defaults.service").map(|s| s.to_owned()),
-    private: config.lookup_bool_or("defaults.private", true),
-    auth: config.lookup_bool_or("defaults.auth", true),
-    copy: config.lookup_bool_or("defaults.copy", false),
+    service: config.get_defaults_service().map(|s| s.to_owned()),
+    private: config.get_defaults_private(),
+    auth: config.get_defaults_auth(),
+    copy: config.get_defaults_copy(),
     input: None,
     range: None,
     raw_urls: false,
