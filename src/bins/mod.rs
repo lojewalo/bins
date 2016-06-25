@@ -5,6 +5,8 @@ pub mod configuration;
 pub mod engines;
 pub mod error;
 pub mod network;
+#[cfg(feature = "file_type_checking")]
+pub mod magic;
 
 extern crate std;
 extern crate toml;
@@ -26,6 +28,30 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::ops::Range;
 use std::path::Path;
+
+cfg_if! {
+  if #[cfg(feature = "file_type_checking")] {
+    fn check_magic(bins: &Bins, pastes: &[PasteFile]) -> Result<()> {
+      use bins::magic::MagicWrapper;
+      let magic = try!(MagicWrapper::new(0, true));
+      let disallowed_types = bins.config.get_general_disallowed_file_types();
+      if let Some(disallowed_types) = disallowed_types {
+        for file in pastes {
+          let magic_type = try!(magic.magic_buffer(file.data.as_bytes()));
+          if disallowed_types.contains(&magic_type.to_lowercase()) {
+            return Err(format!("{} is a disallowed type ({}). use --force to force upload",
+              file.name, magic_type).into());
+          }
+        }
+      }
+      Ok(())
+    }
+  } else {
+    fn check_magic(_: &Bins, _: &[PasteFile]) -> Result<()> {
+      Ok(())
+    }
+  }
+}
 
 #[derive(Clone)]
 pub struct PasteFile {
@@ -146,6 +172,7 @@ impl Bins {
                              pattern)
             .into());
         }
+        try!(check_magic(self, &pastes));
       }
       pastes
     } else {

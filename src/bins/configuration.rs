@@ -17,6 +17,11 @@ const DEFAULT_CONFIG_FILE: &'static str = r#"[general]
 # Supports kB, MB, GB, KiB, MiB, and GiB.
 # file_size_limit = "1MiB"
 
+# List of libmagic file types to disallow. This configuration option is ignored unless bins was built with the
+# "file_type_checking" feature. Bins will not upload any files matching a disallowed type unless it is forced to with
+# --force.
+# disallowed_file_types = ["PEM RSA private key"]
+
 [defaults]
 # If this is true, all pastes will be created as private or unlisted.
 # Using the command-line option `--public` or `--private` will change this behavior.
@@ -87,6 +92,19 @@ impl BinsConfiguration {
       None => return Ok(None),
     };
     Ok(Some(try!(BinsConfiguration::convert_size_str_to_bytes(string))))
+  }
+
+  #[cfg(feature = "file_type_checking")]
+  pub fn get_general_disallowed_file_types(&self) -> Option<Vec<String>> {
+    let disallowed_types = match self.root.lookup("general.disallowed_file_types") {
+      Some(v) => v,
+      None => return None,
+    };
+    let slice = match disallowed_types.as_slice() {
+      Some(s) => s,
+      None => return None,
+    };
+    slice.into_iter().map(|v| v.as_str().map(|s| s.to_owned().to_lowercase())).collect()
   }
 
   pub fn get_defaults_private(&self) -> bool {
