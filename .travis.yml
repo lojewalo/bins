@@ -16,9 +16,14 @@ addons:
   apt:
     packages:
       - xorg-dev
+      - libmagic-dev
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install libmagic; fi
 script:
   - cargo build --verbose
   - cargo build --verbose --no-default-features
+  - cargo build --verbose --features file_type_checking
   # Currently no tests
   # - cargo test --verbose
 notifications:
