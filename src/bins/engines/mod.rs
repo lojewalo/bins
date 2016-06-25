@@ -208,7 +208,7 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
 }
 
 fn number_lines(string: String) -> String {
-  let lines: Vec<&str> = string.split("\n").collect();
+  let lines: Vec<&str> = string.split('\n').collect();
   let num_lines = lines.len();
   let zeroes: String = repeat(" ").take(num_lines.to_string().len()).collect();
   lines.into_iter().enumerate().map(|(i, l)| {
