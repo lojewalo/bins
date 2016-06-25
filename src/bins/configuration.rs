@@ -9,7 +9,6 @@ use toml::Value;
 const DEFAULT_CONFIG_FILE: &'static str = r#"[general]
 # List of file-name patterns to disallow uploading. Bins will not upload any files that match this pattern unless it is
 # forced to with --force.
-#
 # disallowed_file_patterns = ["*.cfg", "*.conf", "*.key"]
 
 # The file size limit for uploads. If any file is larger than this, bins will not upload it unless it is forced to with
