@@ -241,7 +241,7 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
         try!(file.write_all(p.data.as_bytes()));
         bins_output.push_str(format!("Wrote {} -> {}\n", p.name, path.to_string_lossy()).as_str());
       }
-      return Ok(bins_output);
+      return Ok(bins_output[0..bins_output.len() - 1].to_owned());
     }
     Ok(paste_files.join())
   }
