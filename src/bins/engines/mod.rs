@@ -13,7 +13,11 @@ use bins::{self, Bins, PasteFile};
 use hyper::Url;
 use linked_hash_map::LinkedHashMap;
 use std::collections::HashMap;
+use std::env;
+use std::fs::File;
+use std::io::Write;
 use std::iter::repeat;
+use std::path::{Path, PathBuf};
 
 pub struct Index {
   pub files: LinkedHashMap<String, Url>
@@ -195,7 +199,7 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
       })
       .collect());
     let files: LinkedHashMap<String, String> = names.into_iter().zip(all_contents.into_iter()).collect();
-    Ok(files.into_iter()
+    let paste_files = files.into_iter()
       .map(|(name, content)| {
         PasteFile {
           name: name.clone(),
@@ -206,8 +210,34 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
           }
         }
       })
-      .collect::<Vec<PasteFile>>()
-      .join())
+      .collect::<Vec<PasteFile>>();
+    if bins.arguments.write {
+      let mut bins_output = String::new();
+      let output = match bins.arguments.output {
+        Some(ref s) => PathBuf::from(try!(Bins::sanitize_path(Path::new(s)))),
+        None => try!(env::current_dir()),
+      };
+      if !output.exists() {
+        return Err("output dir did not exist".into());
+      }
+      if !output.is_dir() || output.is_file() {
+        return Err("output dir was not a directory".into());
+      }
+      for p in &paste_files {
+        let original_path = output.join(&p.name);
+        let mut path = original_path.clone();
+        let mut num = 0;
+        while path.exists() {
+          num = num + 1;
+          path = Bins::add_number_to_path(&original_path, num);
+        }
+        let mut file = try!(File::create(&path));
+        try!(file.write_all(p.data.as_bytes()));
+        bins_output.push_str(format!("Wrote {} -> {}\n", p.name, path.to_string_lossy()).as_str());
+      }
+      return Ok(bins_output);
+    }
+    Ok(paste_files.join())
   }
 }
 

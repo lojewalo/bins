@@ -1,11 +1,12 @@
 use bins::error::*;
+use bins::Bins;
 use bins::configuration::BinsConfiguration;
 use bins::engines;
 use bins::FlexibleRange;
 use bins::network;
 use clap::{App, Arg};
 use hyper::Url;
-use std::path::{Component, Path};
+use std::path::Path;
 use std::process;
 
 pub struct Arguments {
@@ -23,7 +24,9 @@ pub struct Arguments {
   pub server: Option<Url>,
   pub name: Option<String>,
   pub force: bool,
-  pub number_lines: bool
+  pub number_lines: bool,
+  pub write: bool,
+  pub output: Option<String>
 }
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
@@ -74,7 +77,9 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     server: None,
     name: None,
     force: false,
-    number_lines: false
+    number_lines: false,
+    write: false,
+    output: None
   };
   let name = get_name();
   let version = get_version();
@@ -177,7 +182,19 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
       .short("e")
       .long("number-lines")
       .help("display line numbers for each file in input mode")
-      .requires("input"));
+      .requires("input"))
+    .arg(Arg::with_name("write")
+      .short("w")
+      .long("write")
+      .help("writes pastes to files in input mode")
+      .requires("input"))
+    .arg(Arg::with_name("output")
+      .short("o")
+      .long("output")
+      .help("specifies where to save files in write mode")
+      .takes_value(true)
+      .value_name("dir")
+      .requires("write"));
   for arg in get_clipboard_args() {
     app = app.arg(arg);
   }
@@ -210,24 +227,18 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     arguments.server = Some(try!(network::parse_url(server).chain_err(|| "invalid --server")));
   }
   if let Some(name) = res.value_of("name") {
-    let name = some_or_err!(Path::new(name)
-                              .components()
-                              .filter_map(|s| {
-                                match s {
-                                  Component::Normal(x) => Some(x),
-                                  _ => None
-                                }
-                              })
-                              .last()
-                              .and_then(|s| s.to_str()),
-                            "--name had no valid path components".into());
+    let name = try!(Bins::sanitize_path(Path::new(name)));
     arguments.name = Some(name.to_owned());
+  }
+  if let Some(output) = res.value_of("output") {
+    arguments.output = Some(output.to_owned());
   }
   arguments.raw_urls = res.is_present("raw-urls");
   arguments.urls = res.is_present("urls");
   arguments.all = res.is_present("all");
   arguments.force = res.is_present("force");
   arguments.number_lines = res.is_present("number_lines");
+  arguments.write = res.is_present("write");
   if res.is_present("private") {
     arguments.private = true;
   } else if res.is_present("public") {

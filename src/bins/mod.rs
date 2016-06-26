@@ -27,7 +27,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::ops::Range;
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
 
 cfg_if! {
   if #[cfg(feature = "file_type_checking")] {
@@ -193,19 +193,48 @@ impl Bins {
     let mut names_map: HashMap<String, i32> = HashMap::new();
     for mut paste in pastes {
       let name = paste.name.clone();
-      if names_map.contains_key(&name) {
-        let (beginning, end) = {
-          let path = Path::new(&name);
-          let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-          let extension = path.extension().and_then(|s| s.to_str()).map_or_else(String::new, |s| String::from(".") + s);
-          (stem, extension)
-        };
+      if names_map.contains_key(&name) {;
         let number = names_map.entry(name.clone()).or_insert(1);
-        paste.name = format!("{}_{}{}", beginning, number, end);
+        paste.name = Bins::add_number_to_string(&name, *number);
         *number += 1;
       }
       names_map.entry(name.clone()).or_insert(1);
     }
+  }
+
+  pub fn add_number_to_string(string: &String, num: i32) -> String {
+    let (beginning, end) = {
+      let path = Path::new(&string);
+      let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_owned();
+      let extension = path.extension().and_then(|s| s.to_str()).map_or_else(String::new, |s| String::from(".") + s);
+      (stem, extension)
+    };
+    format!("{}_{}{}", beginning, num, end)
+  }
+
+  pub fn add_number_to_path(path: &PathBuf, num: i32) -> PathBuf {
+    let (beginning, end) = {
+      let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_owned();
+      let extension = path.extension().and_then(|s| s.to_str()).map_or_else(String::new, |s| String::from(".") + s);
+      (stem, extension)
+    };
+    let name = format!("{}_{}{}", beginning, num, end);
+    let mut clone = path.clone();
+    clone.set_file_name(name);
+    clone
+  }
+
+  pub fn sanitize_path(path: &Path) -> Result<&str> {
+    Ok(some_or_err!(path.components()
+                      .filter_map(|s| {
+                        match s {
+                          Component::Normal(x) => Some(x),
+                          _ => None
+                        }
+                      })
+                      .last()
+                      .and_then(|s| s.to_str()),
+                    "--name had no valid path components".into()))
   }
 
   fn get_engine_for_url<'a>(&'a self, url: &'a Url) -> Result<&Box<Bin>> {
