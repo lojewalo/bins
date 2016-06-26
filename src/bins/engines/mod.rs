@@ -219,7 +219,7 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
     if bins.arguments.write {
       let mut bins_output = String::new();
       let output = match bins.arguments.output {
-        Some(ref s) => PathBuf::from(try!(Bins::sanitize_path(Path::new(s)))),
+        Some(ref s) => PathBuf::from(s),
         None => try!(env::current_dir()),
       };
       if !output.exists() {
@@ -229,7 +229,8 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
         return Err("output dir was not a directory".into());
       }
       for p in &paste_files {
-        let original_path = output.join(&p.name);
+        let sanitized = try!(Bins::sanitize_path(Path::new(&p.name)));
+        let original_path = output.join(sanitized);
         let mut path = original_path.clone();
         let mut num = 0;
         while path.exists() {
