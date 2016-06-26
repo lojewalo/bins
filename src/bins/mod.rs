@@ -53,7 +53,7 @@ cfg_if! {
   }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PasteFile {
   pub name: String,
   pub data: String

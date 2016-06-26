@@ -64,6 +64,7 @@ impl Index {
   }
 }
 
+#[derive(Debug)]
 pub struct RemotePasteFile {
   pub name: String,
   pub url: Url,
