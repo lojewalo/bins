@@ -5,6 +5,7 @@ use bins::FlexibleRange;
 use bins::network;
 use clap::{App, Arg};
 use hyper::Url;
+use std::path::{Component, Path};
 use std::process;
 
 pub struct Arguments {
@@ -209,6 +210,17 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     arguments.server = Some(try!(network::parse_url(server).chain_err(|| "invalid --server")));
   }
   if let Some(name) = res.value_of("name") {
+    let name = some_or_err!(Path::new(name)
+                              .components()
+                              .filter_map(|s| {
+                                match s {
+                                  Component::Normal(x) => Some(x),
+                                  _ => None
+                                }
+                              })
+                              .last()
+                              .and_then(|s| s.to_str()),
+                            "--name had no valid path components".into());
     arguments.name = Some(name.to_owned());
   }
   arguments.raw_urls = res.is_present("raw-urls");
