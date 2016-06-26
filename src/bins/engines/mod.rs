@@ -311,7 +311,7 @@ impl Join for Vec<PasteFile> {
     if self.len() == 1 {
       self.get(0).expect("len() == 1, but no first element").data.clone()
     } else {
-      self.into_iter().map(|p| format!("--- {} ---\n\n{}", p.name, p.data)).collect::<Vec<String>>().join("\n\n")
+      self.into_iter().map(|p| format!("==> {} <==\n{}", p.name, p.data)).collect::<Vec<String>>().join("\n")
     }
   }
 }
