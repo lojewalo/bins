@@ -3,7 +3,7 @@
 *A tool for pasting from the terminal.*
 
 [![Travis](https://img.shields.io/travis/jkcclemens/bins/master.svg)](https://travis-ci.org/jkcclemens/bins)
-[![AppVeyor branch](https://img.shields.io/appveyor/ci/jkcclemens/bins/master.svg)](https://github.com/jkcclemens/bins)
+[![AppVeyor branch](https://img.shields.io/appveyor/ci/jkcclemens/bins/master.svg)](https://ci.appveyor.com/project/jkcclemens/bins)
 [![Crates.io](https://img.shields.io/crates/v/bins.svg)](https://crates.io/crates/bins)
 [![Crates.io](https://img.shields.io/crates/d/bins.svg)](https://crates.io/crates/bins)
 [![license](https://img.shields.io/github/license/jkcclemens/bins.svg)](https://github.com/jkcclemens/bins/blob/master/LICENSE)
