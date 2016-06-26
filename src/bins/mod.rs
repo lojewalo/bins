@@ -194,15 +194,11 @@ impl Bins {
     for mut paste in pastes {
       let name = paste.name.clone();
       if names_map.contains_key(&name) {
-        let parts = name.rsplit('.');
-        let (beginning, end) = if parts.clone().count() > 1 {
-          let mut beginning_parts = parts.clone().skip(1).collect::<Vec<_>>();
-          beginning_parts.reverse();
-          let beginning = beginning_parts.join(".");
-          let end = parts.take(1).next().map_or(String::new(), |s| String::from(".") + s);
-          (beginning, end)
-        } else {
-          (name.clone(), String::from(""))
+        let (beginning, end) = {
+          let path = Path::new(&name);
+          let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+          let extension = path.extension().and_then(|s| s.to_str()).map_or_else(String::new, |s| String::from(".") + s);
+          (stem, extension)
         };
         let number = names_map.entry(name.clone()).or_insert(1);
         paste.name = format!("{}_{}{}", beginning, number, end);
