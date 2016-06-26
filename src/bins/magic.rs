@@ -10,6 +10,17 @@ pub struct MagicWrapper {
   loaded: bool
 }
 
+cfg_if! {
+  if #[cfg(target_pointer_width = "64")] {
+    type SizeT = u64;
+  } else if #[cfg(target_pointer_width = "32")] {
+    type SizeT = u32;
+  } else {
+    // well, that's interesting. default down to 32
+    type SizeT = u32;
+  }
+}
+
 impl Drop for MagicWrapper {
   fn drop(&mut self) {
     unsafe { magic_sys::magic_close(self.magic) }
@@ -68,7 +79,7 @@ impl MagicWrapper {
 
   pub fn magic_buffer(&self, buf: &[u8]) -> Result<String> {
     try!(self.check_loaded());
-    let info: *const c_char = unsafe { magic_sys::magic_buffer(self.magic, buf.as_ptr(), buf.len() as u64) };
+    let info: *const c_char = unsafe { magic_sys::magic_buffer(self.magic, buf.as_ptr(), buf.len() as SizeT) };
     self.check_magic_return_value(info)
   }
 
