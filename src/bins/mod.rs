@@ -234,7 +234,7 @@ impl Bins {
                       })
                       .last()
                       .and_then(|s| s.to_str()),
-                    "--name had no valid path components".into()))
+                    "file name had no valid path components".into()))
   }
 
   fn get_engine_for_url<'a>(&'a self, url: &'a Url) -> Result<&Box<Bin>> {
