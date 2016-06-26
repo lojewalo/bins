@@ -54,7 +54,11 @@ impl Index {
                                           ErrorKind::InvalidIndexError.into());
     let url_strings: Vec<String> = some_or_err!(split.iter_mut().map(|s| s.nth(0).map(|s| s.to_owned())).collect(),
                                                 ErrorKind::InvalidIndexError.into());
-    let urls: Vec<Url> = try!(url_strings.into_iter().map(network::parse_url).collect());
+    if url_strings.is_empty() {
+      return Err(ErrorKind::InvalidIndexError.into());
+    }
+    let urls: Result<Vec<Url>> = url_strings.into_iter().map(network::parse_url).collect();
+    let urls: Vec<Url> = try!(urls.chain_err(|| ErrorKind::InvalidIndexError));
     let urls: LinkedHashMap<String, Url> = names.into_iter().zip(urls.into_iter()).collect();
     Ok(Index { files: urls })
   }
