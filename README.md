@@ -68,7 +68,12 @@ cargo install
 
 ## Video demo
 
-[![](https://asciinema.org/a/48288.png)](https://asciinema.org/a/48288)
+[![](https://asciinema.org/a/50217.png)](https://asciinema.org/a/50217)
+
+The demo is 10 minutes and 12 seconds for the full experience. It starts with a basic overview that ends at 2:08. If you
+want the full experience but are strapped for time, there is a
+[fast version](https://asciinema.org/a/amvptojaq33mndgqchijekvws) (7:25) and also a
+[ludicrous speed version](https://asciinema.org/a/als0avp0zerf1j00gg43hev7c) (4:34).
 
 ## Usage
 
