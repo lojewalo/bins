@@ -30,7 +30,7 @@ impl Drop for MagicWrapper {
 impl MagicWrapper {
   pub fn new(flags: i32, load_defaults: bool) -> Result<Self> {
     let magic = unsafe { magic_sys::magic_open(flags) };
-    if magic == std::ptr::null() {
+    if magic.is_null() {
       return Err("libmagic could not create a new magic cookie".into());
     }
     let mut wrapper = MagicWrapper {
@@ -64,9 +64,9 @@ impl MagicWrapper {
   }
 
   fn check_magic_return_value(&self, ptr: *const c_char) -> Result<String> {
-    if ptr == std::ptr::null() {
+    if ptr.is_null() {
       let error = unsafe { magic_sys::magic_error(self.magic) };
-      if error == std::ptr::null() {
+      if error.is_null() {
         Err("libmagic had an error but didn't think it did".into())
       } else {
         let error = unsafe { CStr::from_ptr(error) };
