@@ -12,7 +12,7 @@ build = "build.rs"
 [features]
 default = ["clipboard_support"]
 clipboard_support = ["clipboard"]
-file_type_checking = ["magic-sys"]
+file_type_checking = ["magic-sys", "libc"]
 
 [dependencies]
 toml = "0.1.30"
@@ -25,7 +25,8 @@ linked-hash-map = "0.0.11"
 lazy_static = "0.2.1"
 cfg-if = "0.1.0"
 url = "1.1.1"
-magic-sys = { version = "0.1.0", optional = true }
+magic-sys = { version = "0.2.0", optional = true }
+libc = { version = "0.2.13", optional = true }
 clipboard = { version = "0.1.2", optional = true }
 
 [build-dependencies]

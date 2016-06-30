@@ -9,12 +9,17 @@ extern crate hyper;
 #[macro_use]
 extern crate lazy_static;
 extern crate linked_hash_map;
-#[cfg(feature = "file_type_checking")]
-extern crate magic_sys;
 extern crate rand;
 extern crate rustc_serialize;
 extern crate toml;
 extern crate url;
+
+cfg_if! {
+  if #[cfg(feature = "file_type_checking")] {
+    extern crate libc;
+    extern crate magic_sys;
+  } else {}
+}
 
 mod bins;
 
