@@ -26,7 +26,8 @@ pub struct Arguments {
   pub force: bool,
   pub number_lines: bool,
   pub write: bool,
-  pub output: Option<String>
+  pub output: Option<String>,
+  pub json: bool
 }
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
@@ -79,7 +80,8 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     force: false,
     number_lines: false,
     write: false,
-    output: None
+    output: None,
+    json: false
   };
   let name = get_name();
   let version = get_version();
@@ -194,7 +196,12 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
       .help("specifies where to save files in write mode")
       .takes_value(true)
       .value_name("dir")
-      .requires("write"));
+      .requires("write"))
+    .arg(Arg::with_name("json")
+      .short("j")
+      .long("json")
+      .help("output json about the paste instead of the contents in input mode")
+      .requires("input"));
   for arg in get_clipboard_args() {
     app = app.arg(arg);
   }
@@ -239,6 +246,7 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   arguments.force = res.is_present("force");
   arguments.number_lines = res.is_present("number_lines");
   arguments.write = res.is_present("write");
+  arguments.json = res.is_present("json");
   if res.is_present("private") {
     arguments.private = true;
   } else if res.is_present("public") {

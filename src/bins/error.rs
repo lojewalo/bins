@@ -31,6 +31,7 @@ error_chain! {
     io::Error, IoError, "I/O error";
     hyper::Error, HyperError, "connection error";
     rustc_serialize::json::DecoderError, JsonDecoderError, "json decoder error";
+    rustc_serialize::json::EncoderError, JsonEncoderError, "json encoder error";
     ::std::num::ParseIntError, ParseIntError, "error parsing an integer from a string";
   }
 

@@ -1,6 +1,6 @@
 use bins::{Bins, PasteFile};
-use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceInfo, ProduceRawContent, ProduceRawInfo, RemotePasteFile,
-                    UploadBatchContent, UploadContent, VerifyUrl};
+use bins::engines::{Bin, ConvertUrlsToRawUrls, Info, PasteContents, ProduceInfo, ProduceRawContent, ProduceRawInfo,
+                    RemotePasteFile, UploadBatchContent, UploadContent, VerifyUrl};
 use bins::error::*;
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
@@ -167,43 +167,51 @@ impl UploadBatchContent for Bitbucket {
 }
 
 impl ProduceRawInfo for Bitbucket {
-  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
-    let raw_urls = try!(self.convert_urls_to_raw_urls(bins, vec![url]));
-    Ok(try!(raw_urls.iter()
-      .map(|u| {
-        let name = some_or_err!(u.path_segments().and_then(|s| s.last()),
-                                "paste url was a root url");
-        Ok(RemotePasteFile {
-          name: name.to_owned(),
-          url: u.clone(),
-          contents: None
-        })
-      })
-      .collect()))
+  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Info> {
+    let mut info = try!(self.produce_info(bins, url));
+    info.raw = true;
+    Ok(info)
   }
 
-  fn produce_raw_info_all(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<RemotePasteFile>> {
-    let info: Vec<Vec<RemotePasteFile>> = try!(urls.iter().map(|u| self.produce_raw_info(bins, u)).collect());
-    Ok(info.into_iter().flat_map(|v| v).collect())
+  fn produce_raw_info_all(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<Info>> {
+    let files: Vec<Info> = try!(urls.iter().map(|u| self.produce_raw_info(bins, u)).collect());
+    Ok(files)
   }
 }
 
 impl ProduceInfo for Bitbucket {
-  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
+  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Info> {
     let snippet = try!(self.get_snippet(bins, url));
-    snippet.files
+    let files: Result<Vec<RemotePasteFile>> = snippet.files
       .iter()
       .map(|(name, file)| {
         let link = some_or_err!(file.links.get("html"),
                                 format!("file {} had no html link", name).into());
         let file_url = try!(network::parse_url(link.href.to_string()));
+        let link = some_or_err!(file.links.get("self").map(|l| l.href.to_string()),
+                                format!("file {} had no self link", name).into());
+        let raw_url = try!(network::parse_url(link));
         Ok(RemotePasteFile {
           name: name.to_owned(),
+          id: name.to_owned(),
+          bin: self.get_name().to_owned(),
           url: file_url,
-          contents: None
+          raw_url: raw_url,
+          contents: PasteContents::default()
         })
       })
-      .collect()
+      .collect();
+    Ok(Info {
+      id: snippet.id,
+      name: snippet.title,
+      url: url.clone(),
+      raw_url: None,
+      raw: false,
+      files: try!(files),
+      index: None,
+      contents: PasteContents::default(),
+      bin: self.get_name().to_owned()
+    })
   }
 }
 
@@ -230,6 +238,8 @@ unsafe impl Sync for Bitbucket {}
 
 #[derive(RustcDecodable)]
 struct Snippet {
+  id: String,
+  title: String,
   files: BTreeMap<String, File>
 }
 

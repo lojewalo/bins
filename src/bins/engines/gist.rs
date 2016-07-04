@@ -1,6 +1,6 @@
 use bins::error::*;
-use bins::engines::{Bin, ConvertUrlsToRawUrls, ProduceInfo, ProduceRawContent, ProduceRawInfo, RemotePasteFile,
-                    UploadBatchContent, UploadContent, VerifyUrl};
+use bins::engines::{Bin, ConvertUrlsToRawUrls, Info, PasteContents, ProduceInfo, ProduceRawContent, ProduceRawInfo,
+                    RemotePasteFile, UploadBatchContent, UploadContent, VerifyUrl};
 use bins::network::download::{Downloader, ModifyDownloadRequest};
 use bins::network::upload::{ModifyUploadRequest, Uploader};
 use bins::network::{self, RequestModifiers};
@@ -10,7 +10,10 @@ use hyper::status::StatusCode;
 use hyper::Url;
 use rustc_serialize::json::{self, Json};
 use std::collections::BTreeMap;
-use url::percent_encoding::percent_decode;
+
+lazy_static! {
+  static ref GOOD_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz0123456789-_";
+}
 
 pub struct Gist;
 
@@ -100,59 +103,55 @@ impl UploadBatchContent for Gist {
 }
 
 impl ProduceRawInfo for Gist {
-  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
-    let raw_urls = try!(self.convert_urls_to_raw_urls(bins, vec![url]));
-    Ok(try!(raw_urls.iter()
-      .map(|u| {
-        let name = some_or_err!(u.path_segments().and_then(|s| s.last()),
-                                "paste url was a root url");
-        let name =
-          try!(percent_decode(name.as_bytes()).decode_utf8().map_err(|_| "could not decode file name as utf8".into()));
-        Ok(RemotePasteFile {
-          name: name.into_owned(),
-          url: u.clone(),
-          contents: None
-        })
-      })
-      .collect()))
+  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Info> {
+    let mut info = try!(self.produce_info(bins, url));
+    info.raw = true;
+    Ok(info)
   }
 
-  fn produce_raw_info_all(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<RemotePasteFile>> {
-    let info: Vec<Vec<RemotePasteFile>> = try!(urls.iter().map(|u| self.produce_raw_info(bins, u)).collect());
-    Ok(info.into_iter().flat_map(|v| v).collect())
+  fn produce_raw_info_all(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<Info>> {
+    let info: Vec<Info> = try!(urls.iter().map(|u| self.produce_raw_info(bins, u)).collect());
+    Ok(info)
   }
 }
 
 impl ProduceInfo for Gist {
-  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
-    lazy_static! {
-      static ref GOOD_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz0123456789-_";
-    }
+  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Info> {
     let gist = try!(self.get_gist(bins, url));
     let html_url = some_or_err!(gist.html_url, "no html_url from gist".into());
-    gist.files
+    let files: Result<Vec<RemotePasteFile>> = gist.files
       .iter()
       .map(|(n, g)| {
-        let replaced: String = n.to_lowercase()
-          .chars()
-          .map(|c| if GOOD_CHARS.contains(c) {
-            c
-          } else {
-            '-'
-          })
-          .collect();
-        let new_url = try!(network::parse_url(format!("{}#file-{}", html_url, replaced)));
+        // name, gist
+        let new_url = try!(RemoteGistFile::get_html_url(&html_url, n));
+        let raw_url = match &g.raw_url {
+          &Some(ref s) => try!(network::parse_url(s.clone())),
+          &None => return Err("a gist file did not have a raw_url (this is a bug)".into()),
+        };
         Ok(RemotePasteFile {
           name: n.to_owned(),
+          id: n.to_owned(),
+          bin: self.get_name().to_owned(),
           url: new_url,
-          contents: if !g.truncated {
-            Some(g.content.clone())
-          } else {
-            None
+          raw_url: raw_url,
+          contents: PasteContents {
+            truncated: g.truncated,
+            value: Some(g.content.clone())
           }
         })
       })
-      .collect()
+      .collect();
+    Ok(Info {
+      id: gist.id,
+      name: gist.description,
+      url: url.clone(),
+      raw_url: None,
+      raw: false,
+      files: try!(files),
+      index: None,
+      contents: PasteContents::default(),
+      bin: self.get_name().to_owned()
+    })
   }
 }
 
@@ -198,6 +197,7 @@ unsafe impl Sync for Gist {}
 
 #[derive(RustcEncodable, RustcDecodable)]
 struct GistUpload {
+  id: String,
   files: BTreeMap<String, RemoteGistFile>,
   description: String,
   public: bool,
@@ -205,9 +205,10 @@ struct GistUpload {
 }
 
 impl GistUpload {
-  fn new(description: Option<String>, public: bool) -> Self {
+  fn new(id: Option<String>, description: Option<String>, public: bool) -> Self {
     let map = BTreeMap::new();
     GistUpload {
+      id: id.unwrap_or_else(String::new),
       files: map,
       description: description.unwrap_or_else(String::new),
       public: public,
@@ -216,7 +217,7 @@ impl GistUpload {
   }
 
   fn from(bins: &Bins, files: &[PasteFile]) -> Self {
-    let mut gist = GistUpload::new(None, !bins.arguments.private);
+    let mut gist = GistUpload::new(None, None, !bins.arguments.private);
     for file in files {
       gist.files.insert(file.name.clone(), RemoteGistFile::from(file.data.clone()));
     }
@@ -229,6 +230,20 @@ struct RemoteGistFile {
   content: String,
   raw_url: Option<String>,
   truncated: bool
+}
+
+impl RemoteGistFile {
+  fn get_html_url(html_url: &str, name: &str) -> Result<Url> {
+    let replaced: String = name.to_lowercase()
+      .chars()
+      .map(|c| if GOOD_CHARS.contains(c) {
+        c
+      } else {
+        '-'
+      })
+      .collect();
+    network::parse_url(format!("{}#file-{}", html_url, replaced))
+  }
 }
 
 impl From<String> for RemoteGistFile {

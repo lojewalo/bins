@@ -18,7 +18,9 @@ use std::fs::File;
 use std::io::Write;
 use std::iter::repeat;
 use std::path::{Path, PathBuf};
+use rustc_serialize::{Encodable, Encoder};
 
+#[derive(Debug)]
 pub struct Index {
   pub files: LinkedHashMap<String, Url>
 }
@@ -68,27 +70,85 @@ impl Index {
   }
 }
 
+#[derive(Debug, Clone, RustcEncodable)]
+pub struct PasteContents {
+  pub truncated: bool,
+  pub value: Option<String>
+}
+
+impl Default for PasteContents {
+  fn default() -> Self {
+    PasteContents {
+      truncated: false,
+      value: None
+    }
+  }
+}
+
 #[derive(Debug)]
+pub struct Info {
+  name: String,
+  id: String,
+  url: Url,
+  raw_url: Option<Url>,
+  raw: bool,
+  files: Vec<RemotePasteFile>,
+  index: Option<Index>,
+  contents: PasteContents,
+  bin: String
+}
+
+#[derive(Debug, Clone)]
 pub struct RemotePasteFile {
+  pub id: String,
   pub name: String,
+  pub bin: String,
   pub url: Url,
-  pub contents: Option<String>
+  pub raw_url: Url,
+  pub contents: PasteContents
+}
+
+impl Encodable for RemotePasteFile {
+  fn encode<S: Encoder>(&self, s: &mut S) -> ::std::result::Result<(), S::Error> {
+    s.emit_struct("RemotePasteFile", 6, |s| {
+      try!(s.emit_struct_field("id", 0, |s| self.id.encode(s)));
+      try!(s.emit_struct_field("name", 1, |s| self.name.encode(s)));
+      try!(s.emit_struct_field("bin", 2, |s| self.bin.encode(s)));
+      try!(s.emit_struct_field("url", 3, |s| s.emit_str(self.url.as_str())));
+      try!(s.emit_struct_field("raw_url", 4, |s| s.emit_str(self.raw_url.as_str())));
+      try!(s.emit_struct_field("contents", 5, |s| self.contents.encode(s)));
+      Ok(())
+    })
+  }
+}
+
+pub trait ProduceId {
+  fn produce_id(&self, bins: &Bins, url: &Url) -> Result<String>;
+}
+
+impl<T> ProduceId for T
+  where T: Bin
+{
+  fn produce_id(&self, _: &Bins, url: &Url) -> Result<String> {
+    Ok(some_or_err!(url.path_segments().and_then(|s| s.last()).map(|s| s.to_owned()),
+                    "no last path segment".into()))
+  }
 }
 
 /// Produce information about HTML content from URLs to HTML content.
 pub trait ProduceInfo {
-  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>>;
+  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Info>;
 
-  fn produce_info_all(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<RemotePasteFile>> {
-    let info: Vec<Vec<RemotePasteFile>> = try!(urls.iter().map(|u| self.produce_info(bins, u)).collect());
-    Ok(info.into_iter().flat_map(|v| v).collect())
+  fn produce_info_all(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<Info>> {
+    let info: Vec<Info> = try!(urls.iter().map(|u| self.produce_info(bins, u)).collect());
+    Ok(info)
   }
 }
 
 impl<T> ProduceInfo for T
-  where T: GenerateIndex + ConvertUrlsToRawUrls + Downloader
+  where T: GenerateIndex + ConvertUrlsToRawUrls + Downloader + Bin
 {
-  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
+  fn produce_info(&self, bins: &Bins, url: &Url) -> Result<Info> {
     let raw_url = try!(self.convert_url_to_raw_url(bins, url));
     let mut res = try!(self.download(&bins, &raw_url));
     let content = try!(network::read_response(&mut res));
@@ -99,8 +159,11 @@ impl<T> ProduceInfo for T
         for (name, url) in i.files.clone().into_iter() {
           urls.push(RemotePasteFile {
             name: name.clone(),
+            id: try!(self.produce_id(bins, &url)),
+            bin: self.get_name().to_owned(),
             url: url.clone(),
-            contents: None
+            raw_url: try!(self.convert_url_to_raw_url(bins, &url)),
+            contents: PasteContents::default()
           });
         }
       }
@@ -113,36 +176,52 @@ impl<T> ProduceInfo for T
                                 "paste url was a root url".into());
         urls.push(RemotePasteFile {
           name: name.to_owned(),
+          id: name.to_owned(),
+          bin: self.get_name().to_owned(),
           url: url.clone(),
-          contents: Some(content)
+          raw_url: raw_url.clone(),
+          contents: PasteContents {
+            truncated: false,
+            value: Some(content.clone())
+          }
         });
       }
     }
-    Ok(urls)
+    let id = try!(self.produce_id(bins, &url));
+    Ok(Info {
+      id: id.clone(),
+      name: id,
+      url: url.clone(),
+      raw_url: Some(raw_url),
+      raw: false,
+      files: urls,
+      index: index.ok(),
+      contents: PasteContents {
+        truncated: false,
+        value: Some(content)
+      },
+      bin: self.get_name().to_owned()
+    })
   }
 }
 
 /// Produce information about raw content from URLs to HTML content.
 pub trait ProduceRawInfo {
-  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>>;
+  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Info>;
 
-  fn produce_raw_info_all(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<RemotePasteFile>> {
-    let info: Vec<Vec<RemotePasteFile>> = try!(urls.iter().map(|u| self.produce_raw_info(bins, u)).collect());
-    Ok(info.into_iter().flat_map(|v| v).collect())
+  fn produce_raw_info_all(&self, bins: &Bins, urls: Vec<&Url>) -> Result<Vec<Info>> {
+    let info: Vec<Info> = try!(urls.iter().map(|u| self.produce_raw_info(bins, u)).collect());
+    Ok(info)
   }
 }
 
 impl<T> ProduceRawInfo for T
   where T: ConvertUrlsToRawUrls + Downloader + UsesIndices + ProduceInfo
 {
-  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Vec<RemotePasteFile>> {
-    let info = try!(self.produce_info(bins, url));
-    info.into_iter()
-      .map(|r| {
-        let raw_url = try!(self.convert_url_to_raw_url(bins, &r.url));
-        Ok(RemotePasteFile { url: raw_url, ..r })
-      })
-      .collect()
+  fn produce_raw_info(&self, bins: &Bins, url: &Url) -> Result<Info> {
+    let mut info = try!(self.produce_info(bins, url));
+    info.raw = true;
+    Ok(info)
   }
 }
 
@@ -154,25 +233,37 @@ pub trait ConvertUrlsToRawUrls {
   }
 }
 
+#[derive(RustcEncodable)]
+struct JsonOutput<'a> {
+  id: &'a str,
+  name: &'a str,
+  bin: &'a str,
+  url: &'a str,
+  raw_url: Option<&'a str>,
+  contents: &'a PasteContents,
+  files: Option<&'a [RemotePasteFile]>
+}
+
 /// Produce raw content from a URL to HTML content.
 pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
   fn produce_raw_contents(&self, bins: &Bins, url: &Url) -> Result<String> {
-    let raw_info = if bins.arguments.urls {
+    let info = if bins.arguments.urls {
       try!(self.produce_info(bins, url))
     } else {
       try!(self.produce_raw_info(bins, url))
     };
-    let raw_info: Vec<RemotePasteFile> = if raw_info.len() > 1 {
+    let raw_files = info.files.clone();
+    let raw_files: Vec<RemotePasteFile> = if raw_files.len() > 1 {
       if !bins.arguments.files.is_empty() {
         let mut map: HashMap<String, RemotePasteFile> =
-          raw_info.into_iter().map(|r| (r.name.to_lowercase(), r)).collect();
+          raw_files.into_iter().map(|r| (r.name.to_lowercase(), r)).collect();
         try!(bins.arguments
           .files
           .iter()
           .map(|s| map.remove(&s.to_lowercase()).ok_or(format!("file {} not found", s)))
           .collect())
       } else if let Some(ref range) = bins.arguments.range {
-        let mut numbered_info: HashMap<usize, RemotePasteFile> = raw_info.into_iter()
+        let mut numbered_info: HashMap<usize, RemotePasteFile> = raw_files.into_iter()
           .enumerate()
           .collect();
         try!(range.clone()
@@ -180,30 +271,59 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
           .map(|n| numbered_info.remove(&n).ok_or(format!("file {} not found", n)))
           .collect())
       } else if bins.arguments.all {
-        raw_info
+        raw_files
       } else {
-        let names = raw_info.into_iter().map(|r| String::from("  ") + &r.name).collect::<Vec<_>>().join("\n");
+        let names = raw_files.into_iter().map(|r| String::from("  ") + &r.name).collect::<Vec<_>>().join("\n");
         return Err(format!("paste had multiple files, but no behavior was specified on the command \
                             line\n\navailable files:\n{}",
                            names)
           .into());
       }
     } else {
-      raw_info
+      raw_files
     };
     if bins.arguments.raw_urls || bins.arguments.urls {
-      return Ok(raw_info.into_iter().map(|r| r.url.as_str().to_owned()).collect::<Vec<_>>().join("\n"));
+      return Ok(raw_files.into_iter().map(|r| r.url.as_str().to_owned()).collect::<Vec<_>>().join("\n"));
     }
-    let names: Vec<String> = raw_info.iter().map(|p| p.name.clone()).collect();
-    let all_contents: Vec<String> = try!(raw_info.iter()
+    let names: Vec<String> = raw_files.iter().map(|p| p.name.clone()).collect();
+    let all_contents: Vec<String> = try!(raw_files.iter()
       .map(|p| {
-        match p.contents.clone() {
+        let contents = if p.contents.truncated {
+          None
+        } else {
+          p.contents.value.clone()
+        };
+        match contents {
           Some(contents) => Ok(contents),
-          None => self.download(&bins, &p.url).and_then(|mut r| network::read_response(&mut r)),
+          None => self.download(&bins, &p.raw_url).and_then(|mut r| network::read_response(&mut r)),
         }
       })
       .collect());
     let files: LinkedHashMap<String, String> = names.into_iter().zip(all_contents.into_iter()).collect();
+    if bins.arguments.json {
+      // JSON output should display all known files but only have content for specified files
+      let mut raw_files = info.files;
+      if raw_files.len() < 1 {
+        return Err("paste had no output (this is a bug)".into());
+      }
+      for mut r in &mut raw_files {
+        r.contents.value = files.get(&r.name).cloned();
+      }
+      let json = JsonOutput {
+        name: &info.name,
+        id: &info.id,
+        bin: &info.bin,
+        url: info.url.as_str(),
+        raw_url: info.raw_url.as_ref().map(|u| u.as_str()),
+        contents: &info.contents,
+        files: if raw_files.len() < 2 {
+          None
+        } else {
+          Some(&raw_files)
+        }
+      };
+      return Ok(try!(::rustc_serialize::json::encode(&json)));
+    }
     let paste_files = files.into_iter()
       .map(|(name, content)| {
         PasteFile {
