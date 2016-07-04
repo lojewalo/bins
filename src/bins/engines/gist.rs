@@ -124,9 +124,9 @@ impl ProduceInfo for Gist {
       .map(|(n, g)| {
         // name, gist
         let new_url = try!(RemoteGistFile::get_html_url(&html_url, n));
-        let raw_url = match &g.raw_url {
-          &Some(ref s) => try!(network::parse_url(s.clone())),
-          &None => return Err("a gist file did not have a raw_url (this is a bug)".into()),
+        let raw_url = match g.raw_url {
+          Some(ref s) => try!(network::parse_url(s.clone())),
+          None => return Err("a gist file did not have a raw_url (this is a bug)".into()),
         };
         Ok(RemotePasteFile {
           name: n.to_owned(),

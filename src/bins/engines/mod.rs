@@ -354,7 +354,7 @@ pub trait ProduceRawContent: ProduceRawInfo + ProduceInfo + Downloader {
         let mut path = original_path.clone();
         let mut num = 0;
         while path.exists() {
-          num = num + 1;
+          num += 1;
           path = Bins::add_number_to_path(&original_path, num);
         }
         let mut file = try!(File::create(&path));

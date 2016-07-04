@@ -202,7 +202,7 @@ impl Bins {
     }
   }
 
-  pub fn add_number_to_string(string: &String, num: i32) -> String {
+  pub fn add_number_to_string(string: &str, num: i32) -> String {
     let (beginning, end) = {
       let path = Path::new(&string);
       let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_owned();
