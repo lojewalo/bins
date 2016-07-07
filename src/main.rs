@@ -61,9 +61,28 @@ cfg_if! {
   }
 }
 
+#[derive(RustcEncodable)]
+struct ErrorsJson {
+  errors: Vec<String>
+}
+
 fn inner() -> i32 {
   let bins = or_exit!(make_bins());
-  let output = or_exit!(bins.get_output());
+  let output = match bins.get_output() {
+    Ok(x) => x,
+    Err(e) => {
+      if bins.arguments.json {
+        println_stderr!("{}", or_exit!(rustc_serialize::json::encode(&ErrorsJson {
+          errors: e.iter().map(|e| e.to_string()).collect()
+        }).chain_err(|| "error creating json error")));
+      } else {
+        for err in e.iter() {
+          println_stderr!("{}", err);
+        }
+      }
+      return 1;
+    }
+  };
   if bins.arguments.copy {
     or_exit!(copy_to_clipboard(&output));
   }

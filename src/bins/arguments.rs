@@ -200,8 +200,7 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     .arg(Arg::with_name("json")
       .short("j")
       .long("json")
-      .help("output json about the paste instead of the contents in input mode")
-      .requires("input"));
+      .help("output json about the paste instead of the contents in input mode"));
   for arg in get_clipboard_args() {
     app = app.arg(arg);
   }

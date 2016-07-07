@@ -10,6 +10,7 @@ pub mod magic;
 
 extern crate std;
 extern crate toml;
+extern crate rustc_serialize;
 
 pub use self::engines::bitbucket::Bitbucket;
 pub use self::engines::gist::Gist;
@@ -23,6 +24,7 @@ use bins::arguments::Arguments;
 use bins::configuration::BinsConfiguration;
 use bins::engines::Bin;
 use hyper::Url;
+use rustc_serialize::json;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
@@ -283,8 +285,22 @@ impl Bins {
     } else {
       return Err("no files to upload".into());
     };
+    if self.arguments.json {
+      return Ok(try!(json::encode(&UploadResult {
+        success: true,
+        url: Some(upload_url.as_str()),
+        bin: Some(engine.get_name())
+      })));
+    }
     Ok(upload_url.as_str().to_owned())
   }
+}
+
+#[derive(RustcEncodable)]
+struct UploadResult<'a> {
+  success: bool,
+  url: Option<&'a str>,
+  bin: Option<&'a str>
 }
 
 #[derive(Clone)]
