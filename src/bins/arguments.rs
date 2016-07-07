@@ -10,24 +10,24 @@ use std::path::Path;
 use std::process;
 
 pub struct Arguments {
-  pub files: Vec<String>,
-  pub message: Option<String>,
-  pub service: Option<String>,
-  pub private: bool,
+  pub all: bool,
   pub auth: bool,
   pub copy: bool,
+  pub files: Vec<String>,
+  pub force: bool,
   pub input: Option<String>,
+  pub json: bool,
+  pub message: Option<String>,
+  pub name: Option<String>,
+  pub number_lines: bool,
+  pub output: Option<String>,
+  pub private: bool,
   pub range: Option<FlexibleRange>,
   pub raw_urls: bool,
-  pub urls: bool,
-  pub all: bool,
   pub server: Option<Url>,
-  pub name: Option<String>,
-  pub force: bool,
-  pub number_lines: bool,
-  pub write: bool,
-  pub output: Option<String>,
-  pub json: bool
+  pub service: Option<String>,
+  pub urls: bool,
+  pub write: bool
 }
 
 include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
@@ -64,24 +64,24 @@ cfg_if! {
 
 pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   let mut arguments = Arguments {
-    files: Vec::new(),
-    message: None,
-    service: config.get_defaults_service().map(|s| s.to_owned()),
-    private: config.get_defaults_private(),
+    all: false,
     auth: config.get_defaults_auth(),
     copy: config.get_defaults_copy(),
+    files: Vec::new(),
+    force: false,
     input: None,
+    json: false,
+    message: None,
+    name: None,
+    number_lines: false,
+    output: None,
+    private: config.get_defaults_private(),
     range: None,
     raw_urls: false,
-    urls: false,
-    all: false,
     server: None,
-    name: None,
-    force: false,
-    number_lines: false,
-    write: false,
-    output: None,
-    json: false
+    service: config.get_defaults_service().map(|s| s.to_owned()),
+    urls: false,
+    write: false
   };
   let name = get_name();
   let version = get_version();
@@ -240,13 +240,13 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   if let Some(output) = res.value_of("output") {
     arguments.output = Some(output.to_owned());
   }
-  arguments.raw_urls = res.is_present("raw-urls");
-  arguments.urls = res.is_present("urls");
   arguments.all = res.is_present("all");
   arguments.force = res.is_present("force");
-  arguments.number_lines = res.is_present("number_lines");
-  arguments.write = res.is_present("write");
   arguments.json = res.is_present("json");
+  arguments.number_lines = res.is_present("number_lines");
+  arguments.raw_urls = res.is_present("raw-urls");
+  arguments.urls = res.is_present("urls");
+  arguments.write = res.is_present("write");
   if res.is_present("private") {
     arguments.private = true;
   } else if res.is_present("public") {
