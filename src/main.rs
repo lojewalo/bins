@@ -72,9 +72,11 @@ fn inner() -> i32 {
     Ok(x) => x,
     Err(e) => {
       if bins.arguments.json {
-        println_stderr!("{}", or_exit!(rustc_serialize::json::encode(&ErrorsJson {
-          errors: e.iter().map(|e| e.to_string()).collect()
-        }).chain_err(|| "error creating json error")));
+        println_stderr!("{}",
+                        or_exit!(rustc_serialize::json::encode(&ErrorsJson {
+                            errors: e.iter().map(|e| e.to_string()).collect()
+                          })
+                          .chain_err(|| "error creating json error")));
       } else {
         for err in e.iter() {
           println_stderr!("{}", err);
