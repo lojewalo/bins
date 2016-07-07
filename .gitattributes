@@ -1,3 +1,7 @@
 text eol=lf
 *.rs text
 *.toml text
+*.md text
+Cargo.lock text
+*.yml text
+*.json text
