@@ -4,7 +4,7 @@ use bins::configuration::BinsConfiguration;
 use bins::engines;
 use bins::FlexibleRange;
 use bins::network;
-use clap::{App, Arg};
+use clap::{App, Arg, ArgGroup};
 use hyper::Url;
 use std::path::Path;
 use std::process;
@@ -12,6 +12,7 @@ use std::process;
 pub struct Arguments {
   pub all: bool,
   pub auth: bool,
+  pub bin: Option<String>,
   pub copy: bool,
   pub files: Vec<String>,
   pub force: bool,
@@ -25,7 +26,6 @@ pub struct Arguments {
   pub range: Option<FlexibleRange>,
   pub raw_urls: bool,
   pub server: Option<Url>,
-  pub service: Option<String>,
   pub urls: bool,
   pub write: bool
 }
@@ -66,6 +66,7 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   let mut arguments = Arguments {
     all: false,
     auth: config.get_defaults_auth(),
+    bin: config.get_defaults_bin().map(|s| s.to_owned()),
     copy: config.get_defaults_copy(),
     files: Vec::new(),
     force: false,
@@ -79,7 +80,6 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     range: None,
     raw_urls: false,
     server: None,
-    service: config.get_defaults_service().map(|s| s.to_owned()),
     urls: false,
     write: false
   };
@@ -117,25 +117,38 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
       .short("A")
       .long("anon")
       .help("if pastes should be posted without authentication"))
+    .arg(Arg::with_name("bin")
+      .short("b")
+      .long("bin")
+      .help("bin to use when uploading")
+      .takes_value(true)
+      .possible_values(&*engines::get_bin_names()))
     .arg(Arg::with_name("service")
       .short("s")
       .long("service")
-      .help("pastebin service to use")
+      .help("legacy flag included for backwards compatibility. use --bin, as this will be removed in 2.0.0")
       .takes_value(true)
-      .possible_values(&*engines::get_bin_names())
-      .required(arguments.service.is_none()))
-    .arg(Arg::with_name("list-services")
+      .possible_values(&*engines::get_bin_names()))
+    .group(ArgGroup::with_name("bin_or_service")
+      .args(&["bin", "service"])
+      .required(arguments.bin.is_none()))
+    .arg(Arg::with_name("list-bins")
       .short("l")
-      .long("list-services")
+      .long("list-bins")
       .help("lists available bins and exits")
-      .conflicts_with_all(&["files", "message", "private", "public", "auth", "anon", "service", "input"]))
+      .conflicts_with_all(&["files", "message", "private", "public", "auth", "anon", "bin_or_service", "input"]))
+    .arg(Arg::with_name("list-services")
+      .long("list-services")
+      .help("legacy flag included for backwards compatibility. use --list-bins, as this will be removed in 2.0.0")
+      .conflicts_with_all(&["files", "message", "private", "public", "auth", "anon", "bin_or_service", "input"]))
+    .group(ArgGroup::with_name("list-bins_or_list-services").args(&["list-bins", "list-services"]))
     .arg(Arg::with_name("input")
       .short("i")
       .long("input")
       .help("displays raw contents of input paste")
       .takes_value(true)
       .value_name("url")
-      .conflicts_with_all(&["auth", "anon", "public", "private", "message", "service"]))
+      .conflicts_with_all(&["auth", "anon", "public", "private", "message", "bin_or_service"]))
     .arg(Arg::with_name("range")
       .short("n")
       .long("range")
@@ -206,7 +219,7 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     app = app.arg(arg);
   }
   let res = app.get_matches();
-  if res.is_present("list-services") {
+  if res.is_present("list-bins_or_list-services") {
     println!("{}", engines::get_bin_names().join("\n"));
     process::exit(0);
   }
@@ -216,8 +229,8 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   if let Some(message) = res.value_of("message") {
     arguments.message = Some(message.to_owned());
   }
-  if let Some(service) = res.value_of("service") {
-    arguments.service = Some(service.to_owned());
+  if let Some(bin) = res.value_of("bin_or_service") {
+    arguments.bin = Some(bin.to_owned());
   }
   if let Some(input) = res.value_of("input") {
     arguments.input = Some(input.to_owned());
@@ -226,8 +239,8 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     arguments.range = Some(try!(FlexibleRange::parse(range)));
   }
   if let Some(server) = res.value_of("server") {
-    if let Some(ref service) = arguments.service {
-      if service.to_lowercase() != "hastebin" {
+    if let Some(ref bin) = arguments.bin {
+      if bin.to_lowercase() != "hastebin" {
         return Err("--server may only be used if --service is hastebin".into());
       }
     }

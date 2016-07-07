@@ -84,13 +84,13 @@ impl Bins {
   }
 
   pub fn get_engine(&self) -> Result<&Box<Bin>> {
-    let service = match self.arguments.service {
-      Some(ref s) => s,
-      None => return Err("no service was specified and no default service was set.".into()),
+    let bin = match self.arguments.bin {
+      Some(ref b) => b,
+      None => return Err("no bin was specified and no default bin was set.".into()),
     };
-    match engines::get_bin_by_name(service) {
+    match engines::get_bin_by_name(bin) {
       Some(engine) => Ok(engine),
-      None => Err(format!("unknown service \"{}\"", service).into()),
+      None => Err(format!("unknown bin \"{}\"", bin).into()),
     }
   }
 

@@ -31,9 +31,9 @@ private = true
 # Using the command-line option `--auth` or `--anon` will change this behavior.
 auth = true
 
-# Uncomment this line if you want to set a default service to use with bins. This will make the `--service` option
-# optional and use the configured service if the option is not specified.
-# service = ""
+# Uncomment this line if you want to set a default bin to use with bins. This will make the `--bin` option optional and
+# use the configured bin if the option is not specified.
+# bin = ""
 
 # If this is true, all commands will copy their output to the system clipboard.
 # Using the command-line option `--copy` or `--no-copy` will change this behavior.
@@ -49,7 +49,7 @@ access_token = ""
 
 [pastebin]
 # The API key for pastebin.com. Learn more: http://pastebin.com/api
-# If this is empty, all paste attempts to the pastebin service will fail.
+# If this is empty, all paste attempts to the pastebin bin will fail.
 api_key = ""
 
 [hastebin]
@@ -114,8 +114,8 @@ impl BinsConfiguration {
     self.root.lookup_bool_or("defaults.auth", true)
   }
 
-  pub fn get_defaults_service(&self) -> Option<&str> {
-    self.root.lookup_str("defaults.service")
+  pub fn get_defaults_bin(&self) -> Option<&str> {
+    self.root.lookup_str("defaults.bin").or_else(|| self.root.lookup_str("defaults.service"))
   }
 
   pub fn get_defaults_copy(&self) -> bool {
