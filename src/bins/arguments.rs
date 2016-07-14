@@ -213,7 +213,7 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     .arg(Arg::with_name("json")
       .short("j")
       .long("json")
-      .help("output json a object instead of normal values")
+      .help("output a json object instead of normal values")
       .conflicts_with_all(&["write", "urls", "raw-urls"]));
   for arg in get_clipboard_args() {
     app = app.arg(arg);
