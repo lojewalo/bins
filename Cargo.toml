@@ -35,3 +35,4 @@ rustc_version = "0.1.7"
 
 [profile.release]
 lto = true
+panic = "abort"
