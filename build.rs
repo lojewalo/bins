@@ -28,8 +28,8 @@ fn get_version() -> String {
 }
 
 fn main() {
-  if !version_matches(">= 1.8.0") {
-    writeln!(&mut io::stderr(), "bins requires at least Rust 1.8.0").unwrap();
+  if !version_matches(">= 1.10.0") {
+    writeln!(&mut io::stderr(), "bins requires at least Rust 1.10.0").unwrap();
     exit(1);
   }
   let version = get_version();
