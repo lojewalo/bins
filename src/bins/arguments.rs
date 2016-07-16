@@ -42,6 +42,21 @@ fn get_version() -> String {
   format!("{}{}", version, git_tag)
 }
 
+fn get_feature_info() -> String {
+  let mut features = Vec::new();
+  if cfg!(feature = "clipboard_support") {
+    features.push("clipboard_support");
+  }
+  if cfg!(feature = "file_type_checking") {
+    features.push("file_type_checking");
+  }
+  if features.is_empty() {
+    String::new()
+  } else {
+    format!("features: {}", features.join(", "))
+  }
+}
+
 cfg_if! {
   if #[cfg(feature = "clipboard_support")] {
     fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
@@ -85,8 +100,14 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   };
   let name = get_name();
   let version = get_version();
+  let feature_info = get_feature_info();
+  let combined_version = if feature_info.is_empty() {
+    version
+  } else {
+    format!("{}\n{}", version, feature_info)
+  };
   let mut app = App::new(name.as_ref())
-    .version(version.as_ref())
+    .version(combined_version.as_ref())
     .about("A tool for pasting from the terminal")
     .arg(Arg::with_name("files")
       .help("files to paste")
