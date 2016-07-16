@@ -1,3 +1,22 @@
+<a name="v1.2.0"></a>
+## v1.2.0 (2016-07-16)
+
+
+#### Features
+
+*   include more information in --version and just version in --help ([9b18f037](9b18f037))
+*   add feature information to version string ([ef41cc39](ef41cc39))
+*   allow JSON output when uploading ([48225af3](48225af3))
+*   add --json/-j to output JSON info in input mode ([274dba29](274dba29), closes [#28](28))
+
+#### Bug Fixes
+
+*   do not read metadata unless there is a size limit ([09e9be0a](09e9be0a))
+*   update magic-sys to hopefully fix compilation on ARM ([9134730a](9134730a))
+* **arguments:**  change --json help message and conflicts ([bebe5d2c](bebe5d2c))
+
+
+
 <a name="v1.1.0"></a>
 ## v1.1.0 (2016-06-27)
 
