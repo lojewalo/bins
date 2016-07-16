@@ -42,7 +42,7 @@ fn get_version() -> String {
   format!("{}{}", version, git_tag)
 }
 
-fn get_feature_info() -> String {
+fn get_feature_info() -> Option<String> {
   let mut features = Vec::new();
   if cfg!(feature = "clipboard_support") {
     features.push("clipboard_support");
@@ -51,9 +51,9 @@ fn get_feature_info() -> String {
     features.push("file_type_checking");
   }
   if features.is_empty() {
-    String::new()
+    None
   } else {
-    format!("features: {}", features.join(", "))
+    Some(format!("features: {}", features.join(", ")))
   }
 }
 
@@ -101,10 +101,9 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
   let name = get_name();
   let version = get_version();
   let feature_info = get_feature_info();
-  let combined_version = if feature_info.is_empty() {
-    version
-  } else {
-    format!("{}\n{}", version, feature_info)
+  let combined_version = match feature_info {
+    Some(i) => format!("{}\n{}", version, i),
+    None => version
   };
   let mut app = App::new(name.as_ref())
     .version(combined_version.as_ref())
