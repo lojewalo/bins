@@ -57,24 +57,20 @@ fn get_feature_info() -> Option<String> {
   }
 }
 
-cfg_if! {
-  if #[cfg(feature = "clipboard_support")] {
-    fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
-      vec![Arg::with_name("copy")
-             .short("C")
-             .long("copy")
-             .help("copies the output of the command to the clipboard without a newline")
-             .conflicts_with("no-copy"),
-           Arg::with_name("no-copy")
-             .short("c")
-             .long("no-copy")
-             .help("does not copy the output of the command to the clipboard")]
-    }
-  } else {
-    fn get_clipboard_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
-      Vec::new()
-    }
+fn get_feature_args<'a, 'b>() -> Vec<Arg<'a, 'b>> {
+  let mut args = Vec::new();
+  if cfg!(feature = "clipboard_support") {
+    args.push(Arg::with_name("copy")
+      .short("C")
+      .long("copy")
+      .help("copies the output of the command to the clipboard without a newline")
+      .conflicts_with("no-copy"));
+    args.push(Arg::with_name("no-copy")
+      .short("c")
+      .long("no-copy")
+      .help("does not copy the output of the command to the clipboard"));
   }
+  args
 }
 
 pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
@@ -235,7 +231,7 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
       .long("json")
       .help("output a json object instead of normal values")
       .conflicts_with_all(&["write", "urls", "raw-urls"]));
-  for arg in get_clipboard_args() {
+  for arg in get_feature_args() {
     app = app.arg(arg);
   }
   let res = app.get_matches();
