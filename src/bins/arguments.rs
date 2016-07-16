@@ -30,16 +30,21 @@ pub struct Arguments {
   pub write: bool
 }
 
-include!(concat!(env!("OUT_DIR"), "/git_short_tag.rs"));
+include!(concat!(env!("OUT_DIR"), "/extra_version_info.rs"));
 
 fn get_name() -> String {
   option_env!("CARGO_PKG_NAME").unwrap_or("unknown_name").to_owned()
 }
 
-fn get_version() -> String {
+fn get_version(basic: bool) -> String {
   let version = option_env!("CARGO_PKG_VERSION").unwrap_or("unknown_version").to_owned();
-  let git_tag = git_short_tag();
-  format!("{}{}", version, git_tag)
+  if basic {
+    version
+  } else {
+    let extra_version_info = extra_version_info();
+    let feature_info = get_feature_info().map(|x| format!("\n{}", x)).unwrap_or_else(String::new);
+    format!("{}\n\n{}{}", version, extra_version_info, feature_info)
+  }
 }
 
 fn get_feature_info() -> Option<String> {
@@ -95,15 +100,14 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     write: false
   };
   let name = get_name();
-  let version = get_version();
-  let feature_info = get_feature_info();
-  let combined_version = match feature_info {
-    Some(i) => format!("{}\n{}", version, i),
-    None => version
-  };
+  let version = get_version(true);
   let mut app = App::new(name.as_ref())
-    .version(combined_version.as_ref())
+    .version(version.as_ref())
     .about("A tool for pasting from the terminal")
+    .arg(Arg::with_name("version")
+      .short("V")
+      .long("version")
+      .help("prints version information"))
     .arg(Arg::with_name("files")
       .help("files to paste")
       .takes_value(true)
@@ -235,6 +239,11 @@ pub fn get_arguments(config: &BinsConfiguration) -> Result<Arguments> {
     app = app.arg(arg);
   }
   let res = app.get_matches();
+  if res.is_present("version") {
+    let version = get_version(false);
+    println!("{} {}", name, version);
+    process::exit(0);
+  }
   if res.is_present("list-bins_or_list-services") {
     println!("{}", engines::get_bin_names().join("\n"));
     process::exit(0);

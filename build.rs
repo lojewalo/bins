@@ -11,20 +11,17 @@ use std::process::exit;
 
 fn get_version() -> String {
   let profile = env::var("PROFILE").unwrap();
-  if profile == "release" {
-    String::new()
-  } else {
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let repo = match Repository::open(&manifest_dir) {
-      Ok(r) => r,
-      Err(_) => return String::new(),
-    };
+  let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+  let mut info = Vec::new();
+  info.push(format!("profile: {}", profile));
+  if let Ok(repo) = Repository::open(&manifest_dir) {
     let version = repo.describe(DescribeOptions::new().describe_tags().show_commit_oid_as_fallback(true))
       .unwrap()
       .format(Some(DescribeFormatOptions::new().dirty_suffix("-dirty")))
       .unwrap();
-    String::from("-") + &version
-  }
+    info.push(format!("git: {}", version));
+  };
+  info.join("\n")
 }
 
 fn main() {
@@ -34,10 +31,10 @@ fn main() {
   }
   let version = get_version();
   let out_dir = env::var("OUT_DIR").unwrap();
-  let dest_path = Path::new(&out_dir).join("git_short_tag.rs");
+  let dest_path = Path::new(&out_dir).join("extra_version_info.rs");
   let mut f = File::create(&dest_path).unwrap();
   f.write_all(format!("
-      fn git_short_tag() -> &'static str {{
+      fn extra_version_info() -> &'static str {{
           \"{}\"
       }}
   ",
