@@ -16,7 +16,7 @@
 
 ## Install
 
-**bins requires at least Rust 1.8.0.**
+**bins requires at least Rust 1.10.0.**
 
 ### Release
 
@@ -38,6 +38,10 @@ cargo install bins
 
 ### Development
 
+**Building from source requires the beta or nightly compiler!**
+
+This is due to the new `panic = "abort"` option having a few bugs in stable.
+
 If you want to install the latest version from the repository:
 
 ```sh
@@ -55,15 +59,24 @@ Add `$HOME/.cargo/bin` to your `$PATH` or move `$HOME/.cargo/bin/bins` to `/usr/
 If you are in an environment without `x11`, use `cargo install --no-default-features` to disable clipboard support for
 bins. If clipboard support is enabled, which it is by default, your build will fail without `x11`!
 
+It is also worth noting that the crate used for clipboard support only fills the X clipboard while bins is running, so
+unless you are using a clipboard manager, you won't be able to effectively use clipboard support on Linux. If this is
+your case, I recommend piping the output of bins to your clipboard, using `xclip` or `xsel` instead.
+
 ## Upgrade
 
-To upgrade an existing installation:
+To upgrade an existing installation from crates.io:
+
+```
+cargo install --force bins
+```
+
+To upgrade an existing installation from source:
 
 ```
 cd bins
 git fetch origin && git reset --hard origin/master
-cargo uninstall bins
-cargo install
+cargo install --force
 ```
 
 ## Video demo
@@ -99,7 +112,9 @@ $ bins -s gist hello.c
 https://gist.github.com/215883b109a0047fe07f5ee229de6a51
 ```
 
-bins supports pasting multiple files, too. With services such as GitHub's [gist](https://gist.github.com), these are natively supported. For services which don't support multiple file pastes, an index paste is created and returned which links to individual pastes for each file.
+bins supports pasting multiple files, too. With services such as GitHub's [gist](https://gist.github.com), these are
+natively supported. For services which don't support multiple file pastes, an index paste is created and returned which
+links to individual pastes for each file.
 
 ```
 $ bins -s gist hello.c goodbye.c 
@@ -113,7 +128,9 @@ http://pastie.org/private/v9enoe4qbxgh6ivlazxmaa
 
 #### Specifying visibility options
 
-By default, bins will use the `defaults.private` option from the config file to determine whether or not to create a private paste. The default value of this is `true` - so new pastes will be private for a fresh install. You can override this at the command line:
+By default, bins will use the `defaults.private` option from the config file to determine whether or not to create a
+private paste. The default value of this is `true` - so new pastes will be private for a fresh install. You can override
+this at the command line:
 
 ```
 $ bins --public -s gist hello.c 
