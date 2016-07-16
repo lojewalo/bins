@@ -137,13 +137,13 @@ impl Bins {
         .map(|s| Path::new(s))
         .map(|p| {
           if !self.arguments.force {
-            let metadata = match p.metadata() {
-              Ok(m) => m,
-              Err(e) => return Err(e.to_string().into()),
-            };
-            let size = metadata.len();
             let limit = try!(self.config.get_general_file_size_limit());
             if let Some(limit) = limit {
+              let metadata = match p.metadata() {
+                Ok(m) => m,
+                Err(e) => return Err(format!("could not read metadata for {}: {}", p.to_string_lossy(), e).into()),
+              };
+              let size = metadata.len();
               if size > limit {
                 return Err(format!("{} ({} bytes) was larger than the upload limit ({} bytes). use --force to force \
                                     upload",
