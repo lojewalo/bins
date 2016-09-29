@@ -57,7 +57,7 @@ Add `$HOME/.cargo/bin` to your `$PATH` or move `$HOME/.cargo/bin/bins` to `/usr/
 ### x11/clipboard (Linux-only)
 
 If you are in an environment without `x11`, use `cargo install --no-default-features` to disable clipboard support for
-bins. If clipboard support is enabled, which it is by default, your build will fail without `x11`!
+bins. If clipboard support is enabled, which it is by default, your build will fail without `x11`! Note that it's not sufficient to simply have X11 installed, you need the development libraries/headers (provided by `xorg-dev` on Debian systems).
 
 It is also worth noting that the crate used for clipboard support only fills the X clipboard while bins is running, so
 unless you are using a clipboard manager, you won't be able to effectively use clipboard support on Linux. If this is
