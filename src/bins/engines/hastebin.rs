@@ -20,7 +20,7 @@ impl Hastebin {
       url.set_path("");
       Ok(url)
     } else {
-      network::parse_url(bins.config.get_hastebin_server().unwrap_or("http://hastebin.com"))
+      network::parse_url(bins.config.get_hastebin_server().unwrap_or("https://hastebin.com"))
     }
   }
 
@@ -47,7 +47,7 @@ impl VerifyUrl for Hastebin {
   }
 }
 
-#[derive(RustcDecodable)]
+#[derive(Debug, RustcDecodable)]
 struct HastebinResponse {
   key: String
 }
@@ -56,6 +56,9 @@ impl UploadContent for Hastebin {
   fn upload_paste(&self, bins: &Bins, content: PasteFile) -> Result<Url> {
     let url = try!(self.get_upload_url(bins));
     let mut response = try!(self.upload(&url, bins, &content));
+    if response.status.class().default_code() != ::hyper::Ok {
+      return Err(format!("status code {}", response.status).into());
+    }
     let json = try!(network::read_response(&mut response));
     let content: HastebinResponse = try!(json::decode(&json));
     let scheme = url.scheme();

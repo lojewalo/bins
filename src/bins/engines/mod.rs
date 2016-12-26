@@ -395,6 +395,9 @@ impl<T> UploadContent for T
   fn upload_paste(&self, bins: &Bins, content: PasteFile) -> Result<Url> {
     let url = try!(network::parse_url(self.get_upload_url()));
     let mut response = try!(self.upload(&url, bins, &content));
+    if response.status.class().default_code() != ::hyper::Ok {
+      return Err(format!("status code {}", response.status).into())
+    }
     network::parse_url(try!(network::read_response(&mut response)))
   }
 }

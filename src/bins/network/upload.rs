@@ -2,7 +2,7 @@ use bins::error::*;
 use bins::network::RequestModifiers;
 use bins::{Bins, PasteFile};
 use hyper::client::{Client, Response};
-use hyper::header::Headers;
+use hyper::header::{Headers, UserAgent};
 use hyper::Url;
 
 pub trait Uploader: ModifyUploadRequest {
@@ -10,7 +10,8 @@ pub trait Uploader: ModifyUploadRequest {
     let modifiers = try!(self.modify_request(bins, content));
     let body = modifiers.body.unwrap_or("".to_owned());
     let body = body.as_bytes();
-    let headers = modifiers.headers.unwrap_or_else(Headers::new);
+    let mut headers = modifiers.headers.unwrap_or_else(Headers::new);
+    headers.set(UserAgent(String::from("bins/1.2.0")));
     let client = Client::new();
     let builder = client.post(url.as_str())
       .body(body)
