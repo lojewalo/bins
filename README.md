@@ -14,6 +14,59 @@
 
 ---
 
+## 2.0.0 changes
+
+Hello and welcome to the breaking-change-filled, unstable world of bins 2!
+
+Please delete your config or update it to match the one in the repo root.
+
+### bins supported
+
+Only gist, hastebin, and sprunge have been implemented so far. All of the original bins will be supported when the
+rewrite is complete.
+
+### Safety
+
+A new config section has been added: `safety`. Some options have been moved here, and new options have been added.
+
+- `cancel_on_unsupported`: cancel uploads if attempting to use a feature with a bin that does not support it
+- `warn_on_unsupported`: print a warning if attempting to use a feature with a bin that does not support it
+
+### Usage
+
+Input mode has been renamed and its option has been removed. If the first positional argument to the program is a valid
+URL, bins switches to download mode. Specifying file names after filters the files downloaded.
+
+### Threading
+
+Uploads and downloads are now threaded. When uploading to a bin that does not support multiple files, the files are
+uploaded in parallel, waiting for them to complete before generating and uploading the index file.
+
+When downloading multiple files, the downloads are run in parallel. Some bins, such as gist, requires that a request is
+made to retrieve the raw URLs, so that request is made, then the threaded requests are made.
+
+Threading is handled with a thread pool initialized with the number of threads ready equal to the number of CPU cores.
+
+### JSON output
+
+JSON output is improved and more standardized. Errors will output in JSON soon (not yet implemented).
+
+### Downloading
+
+Every effort has been made to keep the number of requests made to an absolute minimum. If something is downloaded once,
+it is not ever downloaded again (per execution). If you find something that is downloaded more than once, file a bug
+report.
+
+Yes, this is an improvement. bins 1 would redownload files at times when checking for index files, etc.
+
+### Internal
+
+The internal API has been reduced and simplified. This makes the implementations for individual bins appear more
+complex, but there is less need to hack the functionality to make it fit into the API.
+
+bins can declare features they support, automatically have upload and download methods implemented (sometimes), should
+always be able to be `Sync`, work with URLs in a more manageable way, and more.
+
 ## Install
 
 **bins requires at least Rust 1.10.0.**
@@ -54,15 +107,6 @@ cargo install
 
 Add `$HOME/.cargo/bin` to your `$PATH` or move `$HOME/.cargo/bin/bins` to `/usr/local/bin`.
 
-### x11/clipboard (Linux-only)
-
-If you are in an environment without `x11`, use `cargo install --no-default-features` to disable clipboard support for
-bins. If clipboard support is enabled, which it is by default, your build will fail without `x11`! Note that it's not sufficient to simply have X11 installed, you need the development libraries/headers (provided by `xorg-dev` on Debian systems).
-
-It is also worth noting that the crate used for clipboard support only fills the X clipboard while bins is running, so
-unless you are using a clipboard manager, you won't be able to effectively use clipboard support on Linux. If this is
-your case, I recommend piping the output of bins to your clipboard, using `xclip` or `xsel` instead.
-
 ## Upgrade
 
 To upgrade an existing installation from crates.io:
@@ -79,15 +123,6 @@ git fetch origin && git reset --hard origin/master
 cargo install --force
 ```
 
-## Video demo
-
-[![](https://asciinema.org/a/50217.png)](https://asciinema.org/a/50217)
-
-The demo is 10 minutes and 12 seconds for the full experience. It starts with a basic overview that ends at 2:08. If you
-want the full experience but are strapped for time, there is a
-[fast version](https://asciinema.org/a/amvptojaq33mndgqchijekvws) (7:25) and also a
-[ludicrous speed version](https://asciinema.org/a/als0avp0zerf1j00gg43hev7c) (4:34).
-
 ## Usage
 
 To get help, use `bins -h`. bins accepts a list of multiple files, a string, or piped data.
@@ -99,7 +134,7 @@ Take a look at some of the written examples below:
 #### Creating a paste from stdin
 
 ```shell
-$ echo "testing123" | bins -s gist
+$ echo "testing123" | bins -b gist
 https://gist.github.com/fa772739e946eefdd082547ed1ec9d2c
 ```
 
@@ -108,7 +143,7 @@ https://gist.github.com/fa772739e946eefdd082547ed1ec9d2c
 Pasting a single file:
 
 ```
-$ bins -s gist hello.c
+$ bins -b gist hello.c
 https://gist.github.com/215883b109a0047fe07f5ee229de6a51
 ```
 
@@ -117,12 +152,12 @@ natively supported. For services which don't support multiple file pastes, an in
 links to individual pastes for each file.
 
 ```
-$ bins -s gist hello.c goodbye.c 
+$ bins -b gist hello.c goodbye.c
 https://gist.github.com/anonymous/7348da5d3f1cd8134d7cd6ee1cf5e84d
 ```
 
 ```
-$ bins -s pastie hello.c goodbye.c
+$ bins -b pastie hello.c goodbye.c
 http://pastie.org/private/v9enoe4qbxgh6ivlazxmaa
 ```
 
@@ -133,7 +168,7 @@ private paste. The default value of this is `true` - so new pastes will be priva
 this at the command line:
 
 ```
-$ bins --public -s gist hello.c 
+$ bins --public bs gist hello.c
 https://gist.github.com/05285845622e5d6164f0d36b73685b19
 ```
 
