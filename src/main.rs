@@ -312,10 +312,17 @@ fn get_stdin() -> Result<UploadFile> {
 }
 
 fn get_upload_files(inputs: Vec<&str>) -> Result<Vec<UploadFile>> {
-  let files: Vec<(&str, File)> = inputs.into_iter()
-    .map(|f| File::open(f).map(|x| (f, x)))
+  let files: Option<Vec<(&str, File)>> = inputs.into_iter()
+    .map(|f| File::open(f).map(|x| Path::new(f).file_name().and_then(|f| f.to_str()).map(|of| (of, x))))
     .collect::<IoResult<_>>()
     .map_err(BinsError::Io)?;
+  let files = match files {
+    Some(f) => f,
+    None => {
+      error!("one or more inputs did not have a file name or did not have a valid utf-8 file name");
+      return Err(BinsError::Other);
+    }
+  };
   let contents: Vec<(&str, String)> = files.into_iter()
     .map(|(n, mut f)| {
       let mut c = String::new();
