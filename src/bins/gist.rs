@@ -82,7 +82,7 @@ impl ManagesHtmlUrls for Gist {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let gist = self.get_gist(id)?;
     let urls: Vec<PasteUrl> = gist.files.iter()
-      .map(|(name, file)| PasteUrl::html(
+      .map(|(name, _)| PasteUrl::html(
         Some(DownloadedFileName::Explicit(name.clone())),
         format!("https://gist.github.com/{}/#file-{}",
           id,
