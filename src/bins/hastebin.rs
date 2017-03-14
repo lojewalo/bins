@@ -117,9 +117,6 @@ impl UploadsSingleFiles for Hastebin {
       .send()
       .map_err(BinsError::Http)?;
     debug!(target: "hastebin", "res: {:?}", res);
-    if res.status.class().default_code() != ::hyper::Ok {
-      return Err(BinsError::Http(::hyper::Error::Status));
-    }
     let mut content = String::new();
     res.read_to_string(&mut content).map_err(BinsError::Io)?;
     debug!(target: "hastebin", "content: {}", content);
@@ -132,9 +129,14 @@ impl UploadsSingleFiles for Hastebin {
     debug!(target: "hastebin", "parse was a failure, try to parse as error");
     let error: JsonResult<HastebinError> = serde_json::from_str(&content);
     debug!(target: "hastebin", "error parse: {:?}", error);
-    match error {
-      Ok(e) => Err(BinsError::BinError(e.error)),
-      Err(_) => Err(BinsError::InvalidResponse)
+    if let Ok(e) = error {
+      return Err(BinsError::BinError(e.message));
+    }
+    if res.status.class().default_code() != ::hyper::Ok {
+      debug!("bad status code");
+      Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)))
+    } else {
+      Err(BinsError::InvalidResponse)
     }
   }
 }
@@ -152,5 +154,5 @@ struct HastebinSuccess {
 
 #[derive(Debug, Deserialize)]
 struct HastebinError {
-  error: String
+  message: String
 }

@@ -22,6 +22,7 @@ pub enum BinsError {
   Thread(Box<Any + Send + 'static>),
 
   InvalidResponse,
+  InvalidStatus(u16, Option<String>),
   /// An error reported by the bin after attempting an upload.
   BinError(String),
 
@@ -34,6 +35,9 @@ impl Display for BinsError {
   fn fmt(&self, f: &mut Formatter) -> FmtResult {
     if let BinsError::BinError(ref s) = *self {
       write!(f, "the bin responded with the following error: {}", s)
+    } else if let BinsError::InvalidStatus(code, ref s) = *self {
+      let content = s.clone().unwrap_or_default();
+      write!(f, "the bin responded with an invalid status ({}) {}", code, content)
     } else {
       write!(f, "{}", self.description())
     }
@@ -50,6 +54,7 @@ impl StdError for BinsError {
       BinsError::Toml(ref e) => e.description(),
       BinsError::Thread(_) => "a thread panicked",
       BinsError::InvalidResponse => "the bin responded incorrectly (or updated with a breaking change)",
+      BinsError::InvalidStatus(_, _) => "the bin responded with an incorrect status code",
       BinsError::BinError(ref s) => s,
       BinsError::UnsupportedFeature => "bins stopped because an unsupported feature was used with the selected bin",
       BinsError::Config => "bins could not find a configuration file, and it was impossible to create one",
