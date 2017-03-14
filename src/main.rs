@@ -293,7 +293,7 @@ impl<'a> Bins<'a> {
         Paste::Single(f) => {
           println!("{}", f.content);
         },
-        Paste::MultiDownloaded(fs) => {
+        Paste::Multiple(fs) => {
           for f in fs {
             println!("==> {} <==\n\n{}", f.name.name(), f.content);
           }

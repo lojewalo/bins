@@ -188,7 +188,7 @@ impl<T> Downloads for T
       Paste::Single(content.clone())
     } else {
       debug!("multiple files downloaded");
-      Paste::MultiDownloaded(contents)
+      Paste::Multiple(contents)
     };
     debug!("as paste: {:?}", res);
     Ok(res)

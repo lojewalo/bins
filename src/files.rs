@@ -23,7 +23,7 @@ pub struct UploadFile {
 #[serde(rename_all = "snake_case")]
 pub enum Paste {
   Single(DownloadedFile),
-  MultiDownloaded(Vec<DownloadedFile>),
+  Multiple(Vec<DownloadedFile>),
 }
 
 #[derive(Debug, Clone, Serialize)]
