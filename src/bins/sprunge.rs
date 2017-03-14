@@ -91,12 +91,13 @@ impl UploadsSingleFiles for Sprunge {
       .send()
       .map_err(BinsError::Http)?;
     debug!(target: "sprunge", "response: {:?}", res);
-    if res.status.class().default_code() != ::hyper::Ok {
-      return Err(BinsError::Http(::hyper::Error::Status));
-    }
     let mut content = String::new();
     res.read_to_string(&mut content).map_err(BinsError::Io)?;
     debug!(target: "sprunge", "content: {}", content);
+    if res.status.class().default_code() != ::hyper::Ok {
+      debug!("bad status code");
+      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+    }
     Ok(content.replace("\n", ""))
   }
 }
