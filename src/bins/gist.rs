@@ -17,6 +17,7 @@ use std::io::Read;
 use std::sync::Arc;
 
 const GOOD_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz0123456789-_";
+
 pub struct Gist {
   config: Arc<Config>,
   cli: Arc<CommandLineOptions>,
@@ -79,6 +80,18 @@ impl ManagesUrls for Gist {}
 
 impl ManagesHtmlUrls for Gist {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
+    let gist = self.get_gist(id)?;
+    let urls: Vec<PasteUrl> = gist.files.iter()
+      .map(|(name, file)| PasteUrl::html(
+        Some(DownloadedFileName::Explicit(name.clone())),
+        format!("https://gist.github.com/{}/#file-{}",
+          id,
+          name.chars()
+            .map(|c| c.to_lowercase().collect::<String>())
+            .map(|c| if GOOD_CHARS.contains(&c) { c } else { "-".to_owned() })
+            .collect::<String>())))
+      .collect();
+    Ok(urls)
   }
 
   fn id_from_html_url(&self, url: &str) -> Option<String> {
