@@ -38,7 +38,8 @@ use clap::{App, Arg, ArgMatches};
 use flate2::read::GzDecoder;
 
 use std::path::{Path, PathBuf};
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use std::io::{Seek, SeekFrom};
 use std::io::{Read, Write};
 use std::io::Result as IoResult;
 use std::error::Error;
@@ -355,7 +356,12 @@ fn create_xdg_config_file() -> Result<File> {
     let xdg_path = Path::new(&xdg_dir);
     let xdg_config_path = xdg_path.join("bins.cfg");
     if xdg_path.exists() && xdg_path.is_dir() && !xdg_config_path.exists() {
-      return File::create(xdg_config_path).map_err(BinsError::Io);
+      return OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .open(xdg_config_path)
+        .map_err(BinsError::Io);
     }
   }
   Err(BinsError::Config)
@@ -367,11 +373,21 @@ fn create_home_config_file() -> Result<File> {
     let home_folder = home.join(".config");
     let home_folder_config = home_folder.join("bins.cfg");
     if home_folder.exists() && home_folder.is_dir() && !home_folder_config.exists() {
-      return File::create(home_folder_config).map_err(BinsError::Io);
+      return OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .open(home_folder_config)
+        .map_err(BinsError::Io);
     }
     let home_config = Path::new(&home_dir).join(".bins.cfg");
     if home.exists() && home.is_dir() && !home_config.exists() {
-      return File::create(home_config).map_err(BinsError::Io);
+      return OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .open(home_config)
+        .map_err(BinsError::Io);
     }
   }
   Err(BinsError::Config)
@@ -391,6 +407,7 @@ fn create_config_file() -> Result<File> {
     .read_to_string(&mut default_config)
     .map_err(BinsError::Io)?;
   f.write_all(default_config.as_bytes()).map_err(BinsError::Io)?;
+  f.seek(SeekFrom::Start(0)).map_err(BinsError::Io)?;
   Ok(f)
 }
 
