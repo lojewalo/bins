@@ -65,7 +65,7 @@ impl Bin for Hastebin {
 impl ManagesUrls for Hastebin {}
 
 impl ManagesHtmlUrls for Hastebin {
-  fn create_html_url(&self, id: &str, _: &[&str]) -> Result<Vec<PasteUrl>> {
+  fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     Ok(vec![PasteUrl::html(None, self.format_html_url(id))])
   }
 
@@ -75,7 +75,7 @@ impl ManagesHtmlUrls for Hastebin {
 }
 
 impl ManagesRawUrls for Hastebin {
-  fn create_raw_url(&self, id: &str, _: &[&str]) -> Result<Vec<PasteUrl>> {
+  fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let raw_url = self.format_raw_url(id);
     let mut res = self.client.get(&raw_url).send().map_err(BinsError::Http)?;
     let mut content = String::new();
@@ -124,7 +124,7 @@ impl UploadsSingleFiles for Hastebin {
     debug!(target: "hastebin", "success parse: {:?}", success);
     if let Ok(success) = success {
       debug!(target: "hastebin", "upload was a success. creating html url");
-      return Ok((&self.create_html_url(&success.key, &[]).unwrap()[0]).url().to_owned());
+      return Ok((&self.create_html_url(&success.key).unwrap()[0]).url().to_owned());
     }
     debug!(target: "hastebin", "parse was a failure, try to parse as error");
     let error: JsonResult<HastebinError> = serde_json::from_str(&content);

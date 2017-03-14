@@ -16,6 +16,7 @@ use std::collections::BTreeMap;
 use std::io::Read;
 use std::sync::Arc;
 
+const GOOD_CHARS: &'static str = "abcdefghijklmnopqrstuvwxyz0123456789-_";
 pub struct Gist {
   config: Arc<Config>,
   cli: Arc<CommandLineOptions>,
@@ -77,8 +78,7 @@ impl Bin for Gist {
 impl ManagesUrls for Gist {}
 
 impl ManagesHtmlUrls for Gist {
-  fn create_html_url(&self, id: &str, names: &[&str]) -> Result<Vec<PasteUrl>> {
-    Ok(vec![PasteUrl::html(None, format!("https://gist.github.com/{}", id))])
+  fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
   }
 
   fn id_from_html_url(&self, url: &str) -> Option<String> {
@@ -91,7 +91,7 @@ impl ManagesHtmlUrls for Gist {
 }
 
 impl ManagesRawUrls for Gist {
-  fn create_raw_url(&self, id: &str, names: &[&str]) -> Result<Vec<PasteUrl>> {
+  fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let gist = self.get_gist(id)?;
     let urls: Option<Vec<PasteUrl>> = gist.files.iter()
       .map(|(name, file)| file.raw_url.clone()

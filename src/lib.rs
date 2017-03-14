@@ -35,13 +35,13 @@ pub trait Bin: Uploads + Downloads + ManagesUrls + HasFeatures {
 pub trait ManagesUrls: ManagesHtmlUrls + ManagesRawUrls {}
 
 pub trait ManagesHtmlUrls {
-  fn create_html_url(&self, id: &str, names: &[&str]) -> Result<Vec<PasteUrl>>;
+  fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>>;
 
   fn id_from_html_url(&self, url: &str) -> Option<String>;
 }
 
 pub trait ManagesRawUrls {
-  fn create_raw_url(&self, id: &str, names: &[&str]) -> Result<Vec<PasteUrl>>;
+  fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>>;
 
   fn id_from_raw_url(&self, url: &str) -> Option<String>;
 }
@@ -112,7 +112,7 @@ impl<T> Downloads for T
 {
   fn download(&self, id: &str, names: Option<&[&str]>) -> Result<Paste> {
     debug!("downloading id {}", id);
-    let raw_url_strs = self.create_raw_url(id, names.unwrap_or_default())?;
+    let raw_url_strs = self.create_raw_url(id)?;
     debug!("using raw urls {:?}", raw_url_strs);
     let (tx, rx) = channel();
     let mut pool = Pool::new(num_cpus::get() as u32);

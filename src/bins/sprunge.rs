@@ -56,7 +56,7 @@ impl Bin for Sprunge {
 impl ManagesUrls for Sprunge {}
 
 impl ManagesHtmlUrls for Sprunge {
-  fn create_html_url(&self, id: &str, _: &[&str]) -> Result<Vec<PasteUrl>> {
+  fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     Ok(vec![PasteUrl::html(None, self.create_url(id))])
   }
 
@@ -66,7 +66,7 @@ impl ManagesHtmlUrls for Sprunge {
 }
 
 impl ManagesRawUrls for Sprunge {
-  fn create_raw_url(&self, id: &str, _: &[&str]) -> Result<Vec<PasteUrl>> {
+  fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     Ok(vec![PasteUrl::raw(None, self.create_url(id))])
   }
 
