@@ -83,6 +83,8 @@ impl StdError for BinsError {
       BinsError::Io(ref e) => Some(e),
       BinsError::Json(ref e) => Some(e),
       BinsError::Toml(ref e) => Some(e),
+      #[cfg(feature = "file_type_checking")]
+      BinsError::Magic(ref e) => Some(e),
       _ => None
     }
   }
