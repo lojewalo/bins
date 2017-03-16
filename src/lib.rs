@@ -32,18 +32,30 @@ pub trait Bin: Uploads + Downloads + ManagesUrls + HasFeatures {
   fn raw_host(&self) -> &str;
 }
 
-pub trait ManagesUrls: ManagesHtmlUrls + ManagesRawUrls {}
+pub trait ManagesUrls: FormatsUrls + CreatesUrls {}
 
-pub trait ManagesHtmlUrls {
+pub trait CreatesUrls: CreatesHtmlUrls + CreatesRawUrls {}
+
+pub trait CreatesHtmlUrls {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>>;
 
   fn id_from_html_url(&self, url: &str) -> Option<String>;
 }
 
-pub trait ManagesRawUrls {
+pub trait CreatesRawUrls {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>>;
 
   fn id_from_raw_url(&self, url: &str) -> Option<String>;
+}
+
+pub trait FormatsUrls: FormatsHtmlUrls + FormatsRawUrls {}
+
+pub trait FormatsHtmlUrls {
+  fn format_html_url(&self, id: &str) -> Option<String>;
+}
+
+pub trait FormatsRawUrls {
+  fn format_raw_url(&self, id: &str) -> Option<String>;
 }
 
 pub trait HasFeatures {
@@ -51,11 +63,11 @@ pub trait HasFeatures {
 }
 
 pub trait Uploads {
-  fn upload(&self, contents: &[UploadFile]) -> Result<String>;
+  fn upload(&self, contents: &[UploadFile], index: bool) -> Result<Vec<PasteUrl>>;
 }
 
 pub trait UploadsSingleFiles {
-  fn upload_single(&self, content: &UploadFile) -> Result<String>;
+  fn upload_single(&self, content: &UploadFile) -> Result<PasteUrl>;
 }
 
 pub trait Downloads {
@@ -69,10 +81,10 @@ pub trait HasClient {
 impl<T> Uploads for T
   where T: UploadsSingleFiles + Sync
 {
-  fn upload(&self, contents: &[UploadFile]) -> Result<String> {
+  fn upload(&self, contents: &[UploadFile], index: bool) -> Result<Vec<PasteUrl>> {
     if contents.len() == 1 {
       debug!("only one file to upload");
-      return self.upload_single(&contents[0]);
+      return self.upload_single(&contents[0]).map(|x| vec![x]);
     }
     debug!("multiple files to upload");
     let (tx, rx) = channel();
@@ -96,19 +108,30 @@ impl<T> Uploads for T
       debug!("done joining");
       for (name, result) in rx.into_iter().take(channel_size) {
         let upload = result?;
-        urls.push(IndexedFile::new(name, upload));
+        urls.push(IndexedFile::new(name, upload.url().to_owned()));
       }
       Ok(())
     })?;
-    debug!("creating index");
-    let index = serde_json::to_string_pretty(&urls).map_err(BinsError::Json)?;
-    debug!("uploading index");
-    self.upload_single(&UploadFile::new("index.json".to_owned(), index))
+    if index {
+      debug!("creating index");
+      let index = serde_json::to_string_pretty(&urls).map_err(BinsError::Json)?;
+      debug!("uploading index");
+      self.upload_single(&UploadFile::new("index.json".to_owned(), index)).map(|x| vec![x])
+    } else {
+      Ok(urls.into_iter()
+        .map(|indexed_file| {
+          PasteUrl::Html {
+            name: Some(DownloadedFileName::Explicit(indexed_file.name)),
+            url: indexed_file.url
+          }
+        })
+        .collect())
+    }
   }
 }
 
 impl<T> Downloads for T
-  where T: ManagesUrls + HasClient + Sync
+  where T: CreatesUrls + HasClient + Sync
 {
   fn download(&self, id: &str, names: Option<&[&str]>) -> Result<Paste> {
     debug!("downloading id {}", id);

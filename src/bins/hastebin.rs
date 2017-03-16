@@ -5,7 +5,7 @@ use hyper_openssl::OpensslClient;
 use serde_json;
 use serde_json::Result as JsonResult;
 
-use lib::{Bin, BinFeature, ManagesUrls, ManagesHtmlUrls, ManagesRawUrls, UploadsSingleFiles, HasClient, HasFeatures, PasteUrl};
+use lib::*;
 use lib::Result;
 use lib::error::*;
 use lib::files::*;
@@ -38,14 +38,6 @@ impl Hastebin {
     let last_segment = option!(segments.last());
     last_segment.split('.').next().map(|x| x.to_owned())
   }
-
-  fn format_raw_url(&self, id: &str) -> String {
-    format!("https://hastebin.com/raw/{}", id)
-  }
-
-  fn format_html_url(&self, id: &str) -> String {
-    format!("https://hastebin.com/{}", id)
-  }
 }
 
 impl Bin for Hastebin {
@@ -64,19 +56,26 @@ impl Bin for Hastebin {
 
 impl ManagesUrls for Hastebin {}
 
-impl ManagesHtmlUrls for Hastebin {
-  fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
-    Ok(vec![PasteUrl::html(None, self.format_html_url(id))])
-  }
+impl CreatesUrls for Hastebin {}
 
-  fn id_from_html_url(&self, url: &str) -> Option<String> {
-    self.id_from_url(url)
+impl FormatsUrls for Hastebin {}
+
+impl FormatsHtmlUrls for Hastebin {
+  fn format_html_url(&self, id: &str) -> Option<String> {
+    Some(format!("https://hastebin.com/{}", id))
   }
 }
 
-impl ManagesRawUrls for Hastebin {
-  fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
-    let raw_url = self.format_raw_url(id);
+impl FormatsRawUrls for Hastebin {
+  fn format_raw_url(&self, id: &str) -> Option<String> {
+    Some(format!("https://hastebin.com/raw/{}", id))
+  }
+}
+
+impl CreatesHtmlUrls for Hastebin {
+  fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
+    let html_url = self.format_html_url(id).unwrap();
+    let raw_url = self.format_raw_url(id).unwrap();
     let mut res = self.client.get(&raw_url).send().map_err(BinsError::Http)?;
     let mut content = String::new();
     res.read_to_string(&mut content).map_err(BinsError::Io)?;
@@ -92,7 +91,36 @@ impl ManagesRawUrls for Hastebin {
             return Err(BinsError::Other);
           }
         };
-        Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(DownloadedFileName::Explicit(name)), self.format_raw_url(&id))).collect())
+        Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(DownloadedFileName::Explicit(name)), self.format_html_url(&id).unwrap())).collect())
+      },
+      Err(_) => Ok(vec![PasteUrl::Downloaded(html_url, DownloadedFile::new(DownloadedFileName::Guessed(id.to_owned()), content))])
+    }
+  }
+
+  fn id_from_html_url(&self, url: &str) -> Option<String> {
+    self.id_from_url(url)
+  }
+}
+
+impl CreatesRawUrls for Hastebin {
+  fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
+    let raw_url = self.format_raw_url(id).unwrap();
+    let mut res = self.client.get(&raw_url).send().map_err(BinsError::Http)?;
+    let mut content = String::new();
+    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    let parsed: serde_json::Result<Vec<IndexedFile>> = serde_json::from_str(&content);
+    match parsed {
+      Ok(is) => {
+        debug!("file was an index, so checking its urls");
+        let ids: Option<Vec<(String, String)>> = is.iter().map(|x| self.id_from_html_url(&x.url).map(|i| (x.name.clone(), i))).collect();
+        let ids = match ids {
+          Some(i) => i,
+          None => {
+            debug!("could not parse an ID from one of the URLs in the index");
+            return Err(BinsError::Other);
+          }
+        };
+        Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(DownloadedFileName::Explicit(name)), self.format_raw_url(&id).unwrap())).collect())
       },
       Err(_) => Ok(vec![PasteUrl::Downloaded(raw_url, DownloadedFile::new(DownloadedFileName::Guessed(id.to_owned()), content))])
     }
@@ -110,10 +138,10 @@ impl HasFeatures for Hastebin {
 }
 
 impl UploadsSingleFiles for Hastebin {
-  fn upload_single(&self, content: &UploadFile) -> Result<String> {
+  fn upload_single(&self, file: &UploadFile) -> Result<PasteUrl> {
     debug!(target: "hastebin", "uploading single file");
     let mut res = self.client.post("https://hastebin.com/documents")
-      .body(&content.content)
+      .body(&file.content)
       .send()
       .map_err(BinsError::Http)?;
     debug!(target: "hastebin", "res: {:?}", res);
@@ -124,7 +152,8 @@ impl UploadsSingleFiles for Hastebin {
     debug!(target: "hastebin", "success parse: {:?}", success);
     if let Ok(success) = success {
       debug!(target: "hastebin", "upload was a success. creating html url");
-      return Ok((&self.create_html_url(&success.key).unwrap()[0]).url().to_owned());
+      let url = self.format_html_url(&success.key).unwrap();
+      return Ok(PasteUrl::html(Some(DownloadedFileName::Explicit(file.name.clone())), url));
     }
     debug!(target: "hastebin", "parse was a failure, try to parse as error");
     let error: JsonResult<HastebinError> = serde_json::from_str(&content);

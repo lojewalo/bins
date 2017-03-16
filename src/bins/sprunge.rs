@@ -2,7 +2,7 @@ use url::Url;
 use url::form_urlencoded;
 use hyper::Client;
 
-use lib::{Bin, BinFeature, ManagesUrls, ManagesHtmlUrls, ManagesRawUrls, UploadsSingleFiles, HasClient, HasFeatures, PasteUrl};
+use lib::*;
 use lib::Result;
 use lib::error::*;
 use lib::files::*;
@@ -55,7 +55,23 @@ impl Bin for Sprunge {
 
 impl ManagesUrls for Sprunge {}
 
-impl ManagesHtmlUrls for Sprunge {
+impl FormatsUrls for Sprunge {}
+
+impl CreatesUrls for Sprunge {}
+
+impl FormatsHtmlUrls for Sprunge {
+  fn format_html_url(&self, id: &str) -> Option<String> {
+    Some(self.create_url(id))
+  }
+}
+
+impl FormatsRawUrls for Sprunge {
+  fn format_raw_url(&self, id: &str) -> Option<String> {
+    Some(self.create_url(id))
+  }
+}
+
+impl CreatesHtmlUrls for Sprunge {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     Ok(vec![PasteUrl::html(None, self.create_url(id))])
   }
@@ -65,7 +81,7 @@ impl ManagesHtmlUrls for Sprunge {
   }
 }
 
-impl ManagesRawUrls for Sprunge {
+impl CreatesRawUrls for Sprunge {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     Ok(vec![PasteUrl::raw(None, self.create_url(id))])
   }
@@ -82,7 +98,7 @@ impl HasFeatures for Sprunge {
 }
 
 impl UploadsSingleFiles for Sprunge {
-  fn upload_single(&self, contents: &UploadFile) -> Result<String> {
+  fn upload_single(&self, contents: &UploadFile) -> Result<PasteUrl> {
     debug!(target: "sprunge", "uploading single file");
     let mut res = self.client.post("http://sprunge.us")
       .body(&form_urlencoded::Serializer::new(String::new())
@@ -98,7 +114,8 @@ impl UploadsSingleFiles for Sprunge {
       debug!("bad status code");
       return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
     }
-    Ok(content.replace("\n", ""))
+    let url = content.replace("\n", "");
+    Ok(PasteUrl::raw(Some(DownloadedFileName::Explicit(contents.name.clone())), url))
   }
 }
 

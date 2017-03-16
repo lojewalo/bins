@@ -111,7 +111,16 @@ fn inner() -> i32 {
     .arg(Arg::with_name("json")
       .long("json")
       .short("j")
-      .help("make bins output JSON information"))
+      .help("output JSON information"))
+    .arg(Arg::with_name("raw-urls")
+      .long("raw-urls")
+      .short("r")
+      .help("output URLs to the raw content")
+      .conflicts_with("html-urls"))
+    .arg(Arg::with_name("html-urls")
+      .long("html-urls")
+      .short("u")
+      .help("output URLs to the HTML content"))
     .get_matches();
 
   let level = if matches.is_present("debug") {
@@ -139,6 +148,12 @@ fn inner() -> i32 {
 
   if matches.is_present("json") {
     cli_options.json = Some(true);
+  }
+
+  if matches.is_present("raw-urls") {
+    cli_options.url_output = Some(UrlOutputMode::Raw);
+  } else if matches.is_present("html-urls") {
+    cli_options.url_output = Some(UrlOutputMode::Html);
   }
 
   let config = Arc::new(config);
@@ -228,7 +243,7 @@ impl<'a> Bins<'a> {
         return 1;
       }
     };
-    match bin.upload(&upload_files) {
+    match bin.upload(&upload_files, self.cli_options.url_output.is_none()) {
       Err(e) => {
         error!("error uploading to {}: {}", bin.name(), e);
         for error in error_parents(&e) {
@@ -236,7 +251,43 @@ impl<'a> Bins<'a> {
         }
         return 1;
       },
-      Ok(u) => println!("{}", u)
+      Ok(urls) => {
+        if let Some(UrlOutputMode::Raw) = self.cli_options.url_output {
+          for u in urls {
+            let id = match bin.id_from_html_url(u.url()) {
+              Some(i) => i,
+              None => {
+                error!("could not parse ID from HTML URL");
+                error!("outputting HTML URL instead");
+                println!("{}", u.url());
+                return 1;
+              }
+            };
+            let raw_urls = match bin.format_raw_url(&id) {
+              Some(u) => vec![u],
+              None => match bin.create_raw_url(&id) {
+                Ok(u) => u.into_iter().map(|x| x.url().to_owned()).collect(),
+                Err(e) => {
+                  error!("error converting HTML URL to raw URL: {}", e);
+                  for error in error_parents(&e) {
+                    error!("{}", error);
+                  }
+                  error!("outputting HTML URL instead");
+                  println!("{}", u.url());
+                  return 1;
+                }
+              }
+            };
+            for raw_url in raw_urls {
+              println!("{}", raw_url);
+            }
+          }
+        } else {
+          for url in urls {
+            println!("{}", url.url());
+          }
+        }
+      }
     }
     0
   }
@@ -273,6 +324,26 @@ impl<'a> Bins<'a> {
         return 1;
       }
     };
+    if let Some(ref output_mode) = self.cli_options.url_output {
+      let urls = match *output_mode {
+        UrlOutputMode::Html => bin.create_html_url(&id),
+        UrlOutputMode::Raw =>bin.create_raw_url(&id)
+      };
+      let urls = match urls {
+        Ok(us) => us,
+        Err(e) => {
+          error!("error creating URLs from ID: {}", e);
+          for error in error_parents(&e) {
+            error!("{}", error);
+          }
+          return 1;
+        }
+      };
+      for url in urls {
+        println!("{}", url.url());
+      }
+      return 0;
+    }
     let download = match bin.download(&id, names) {
       Ok(d) => d,
       Err(e) => {

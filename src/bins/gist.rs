@@ -6,7 +6,7 @@ use hyper::client::RequestBuilder;
 use hyper::header::{Headers, ContentType, UserAgent, Authorization, Basic};
 use serde_json;
 
-use lib::{Bin, BinFeature, ManagesUrls, ManagesHtmlUrls, ManagesRawUrls, Uploads, HasClient, HasFeatures, PasteUrl};
+use lib::*;
 use lib::Result;
 use lib::error::*;
 use lib::files::*;
@@ -78,7 +78,23 @@ impl Bin for Gist {
 
 impl ManagesUrls for Gist {}
 
-impl ManagesHtmlUrls for Gist {
+impl CreatesUrls for Gist {}
+
+impl FormatsUrls for Gist {}
+
+impl FormatsHtmlUrls for Gist {
+  fn format_html_url(&self, id: &str) -> Option<String> {
+    None
+  }
+}
+
+impl FormatsRawUrls for Gist {
+  fn format_raw_url(&self, id: &str) -> Option<String> {
+    None
+  }
+}
+
+impl CreatesHtmlUrls for Gist {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let gist = self.get_gist(id)?;
     let urls: Vec<PasteUrl> = gist.files.iter()
@@ -103,7 +119,7 @@ impl ManagesHtmlUrls for Gist {
   }
 }
 
-impl ManagesRawUrls for Gist {
+impl CreatesRawUrls for Gist {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let gist = self.get_gist(id)?;
     let urls: Option<Vec<PasteUrl>> = gist.files.iter()
@@ -136,7 +152,7 @@ impl HasFeatures for Gist {
 }
 
 impl Uploads for Gist {
-  fn upload(&self, contents: &[UploadFile]) -> Result<String> {
+  fn upload(&self, contents: &[UploadFile], _: bool) -> Result<Vec<PasteUrl>> {
     let mut files = BTreeMap::new();
     for file in contents {
       files.insert(file.name.clone(), UploadGistFile { content: file.content.clone() });
@@ -155,7 +171,7 @@ impl Uploads for Gist {
     }
     let paste: RemoteGistPaste = serde_json::from_str(&content).map_err(BinsError::Json)?;
     match paste.html_url {
-      Some(u) => Ok(u),
+      Some(u) => Ok(vec![PasteUrl::html(None, u)]),
       None => Err(BinsError::InvalidResponse)
     }
   }

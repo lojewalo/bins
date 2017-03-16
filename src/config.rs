@@ -67,5 +67,12 @@ pub struct CommandLineOptions {
   pub authed: Option<bool>,
   pub private: Option<bool>,
   pub file_name: Option<String>,
-  pub json: Option<bool>
+  pub json: Option<bool>,
+  pub url_output: Option<UrlOutputMode>
+}
+
+#[derive(Debug)]
+pub enum UrlOutputMode {
+  Html,
+  Raw
 }
