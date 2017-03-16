@@ -128,6 +128,18 @@ fn inner() -> i32 {
       .takes_value(true)
       .value_name("message")
       .conflicts_with("inputs"))
+    .arg(Arg::with_name("list-bins")
+      .long("list-bins")
+      .short("-l")
+      .help("list the available bins")
+      .conflicts_with_all(&["bin",
+        "public",
+        "private",
+        "anonymous",
+        "authed",
+        "raw-urls",
+        "html-urls",
+        "message"]))
     .get_matches();
 
   let level = if matches.is_present("debug") {
@@ -194,6 +206,9 @@ struct Bins<'a> {
 
 impl<'a> Bins<'a> {
   fn main(&self) -> i32 {
+    if self.matches.is_present("list-bins") {
+      return self.list_bins();
+    }
     let inputs: Option<Vec<&str>> = self.matches.values_of("inputs").map(|x| x.collect());
     if let Some(ref is) = inputs {
       if !is.is_empty() {
@@ -204,6 +219,13 @@ impl<'a> Bins<'a> {
       }
     }
     self.upload(inputs)
+  }
+
+  fn list_bins(&self) -> i32 {
+    for bin in &self.bins {
+      println!("{}", bin.1.name());
+    }
+    0
   }
 
   fn upload(&self, inputs: Option<Vec<&str>>) -> i32 {
