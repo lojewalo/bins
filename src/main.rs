@@ -235,8 +235,19 @@ impl<'a> Bins<'a> {
   }
 
   fn list_bins(&self) -> i32 {
-    for bin in &self.bins {
-      println!("{}", bin.1.name());
+    if let Some(true) = self.cli_options.json {
+      let names: Vec<&String> = self.bins.keys().collect();
+      match serde_json::to_string(&names) {
+        Ok(j) => println!("{}", j),
+        Err(e) => {
+          report_error!("error while encoding JSON: {}", e);
+          return 1;
+        }
+      }
+    } else {
+      for name in self.bins.keys() {
+        println!("{}", name);
+      }
     }
     0
   }
