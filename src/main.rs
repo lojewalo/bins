@@ -14,6 +14,8 @@ extern crate flate2;
 #[macro_use]
 extern crate log;
 extern crate time;
+#[cfg(feature = "file_type_checking")]
+extern crate magic;
 
 macro_rules! option {
   ($e: expr) => {{
@@ -290,6 +292,13 @@ impl<'a> Bins<'a> {
         return 1;
       }
     };
+    #[cfg(feature = "file_type_checking")]
+    {
+      if let Err(e) = self.check_file_types(&upload_files) {
+        report_error!("error while checking file types: {}", e);
+        return 1;
+      }
+    }
     match bin.upload(&upload_files, self.cli_options.url_output.is_none()) {
       Err(e) => {
         report_error!("error uploading to {1}: {0}", e, bin.name());
@@ -331,6 +340,26 @@ impl<'a> Bins<'a> {
       }
     }
     0
+  }
+
+  #[cfg(feature = "file_type_checking")]
+  fn check_file_types(&self, files: &[UploadFile]) -> Result<()> {
+    use magic::{Cookie, flags};
+
+    let cookie = Cookie::open(flags::NONE).map_err(BinsError::Magic)?;
+    cookie.load(&[""; 0]).map_err(BinsError::Magic)?;
+    for upload_file in files {
+      let kind = cookie.buffer(&upload_file.content.as_bytes()).map_err(BinsError::Magic)?;
+      if let Some(ref disallowed) = self.config.safety.disallowed_file_types {
+        if disallowed.contains(&kind) {
+          return Err(BinsError::InvalidFileType {
+            name: upload_file.name.clone(),
+            kind: kind
+          });
+        }
+      }
+    }
+    Ok(())
   }
 
   fn download(&self, url: Url, names: Option<&[&str]>) -> i32 {

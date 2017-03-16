@@ -8,6 +8,8 @@ extern crate toml;
 extern crate log;
 extern crate scoped_threadpool;
 extern crate num_cpus;
+#[cfg(feature = "file_type_checking")]
+extern crate magic;
 
 pub mod error;
 pub mod files;
