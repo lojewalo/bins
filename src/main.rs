@@ -121,6 +121,13 @@ fn inner() -> i32 {
       .long("html-urls")
       .short("u")
       .help("output URLs to the HTML content"))
+    .arg(Arg::with_name("message")
+      .long("message")
+      .short("m")
+      .help("specify a message to upload instead of files or stdin")
+      .takes_value(true)
+      .value_name("message")
+      .conflicts_with("inputs"))
     .get_matches();
 
   let level = if matches.is_present("debug") {
@@ -234,7 +241,13 @@ impl<'a> Bins<'a> {
 
     let upload_files = match inputs {
       Some(v) => get_upload_files(v),
-      None => get_stdin().map(|x| vec![x])
+      None => {
+        if let Some(message) = self.matches.value_of("message") {
+          Ok(vec![UploadFile::new(String::from("message"), message.to_owned())])
+        } else {
+          get_stdin().map(|x| vec![x])
+        }
+      }
     };
     let upload_files = match upload_files {
       Ok(u) => u,
