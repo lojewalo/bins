@@ -99,7 +99,7 @@ impl CreatesHtmlUrls for Gist {
     let gist = self.get_gist(id)?;
     let urls: Vec<PasteUrl> = gist.files.iter()
       .map(|(name, _)| PasteUrl::html(
-        Some(DownloadedFileName::Explicit(name.clone())),
+        Some(PasteFileName::Explicit(name.clone())),
         format!("https://gist.github.com/{}/#file-{}",
           id,
           name.chars()
@@ -124,7 +124,7 @@ impl CreatesRawUrls for Gist {
     let gist = self.get_gist(id)?;
     let urls: Option<Vec<PasteUrl>> = gist.files.iter()
       .map(|(name, file)| file.raw_url.clone()
-        .map(|raw_url| PasteUrl::raw(Some(DownloadedFileName::Explicit(name.clone())), raw_url)))
+        .map(|raw_url| PasteUrl::raw(Some(PasteFileName::Explicit(name.clone())), raw_url)))
       .collect();
     match urls {
       Some(u) => Ok(u),

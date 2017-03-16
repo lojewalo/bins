@@ -115,7 +115,7 @@ impl UploadsSingleFiles for Sprunge {
       return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
     }
     let url = content.replace("\n", "");
-    Ok(PasteUrl::raw(Some(DownloadedFileName::Explicit(contents.name.clone())), url))
+    Ok(PasteUrl::raw(Some(PasteFileName::Explicit(contents.name.clone())), url))
   }
 }
 

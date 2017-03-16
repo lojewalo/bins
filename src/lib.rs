@@ -121,7 +121,7 @@ impl<T> Uploads for T
       Ok(urls.into_iter()
         .map(|indexed_file| {
           PasteUrl::Html {
-            name: Some(DownloadedFileName::Explicit(indexed_file.name)),
+            name: Some(PasteFileName::Explicit(indexed_file.name)),
             url: indexed_file.url
           }
         })
@@ -147,7 +147,7 @@ impl<T> Downloads for T
         debug!("queuing scoped download thread");
         scope.execute(move || {
           if let Some(ns) = names {
-            if let Some(DownloadedFileName::Explicit(name)) = url.name() {
+            if let Some(PasteFileName::Explicit(name)) = url.name() {
               if !ns.contains(&name.as_str()) {
                 debug!("skipping {}", name);
                 if let Err(e) = tx_clone.send(Ok(None)) {
@@ -184,7 +184,7 @@ impl<T> Downloads for T
               return;
             }
             let tx_res = tx_clone.send(Ok(Some(DownloadedFile::new(
-              url.name().unwrap_or_else(|| DownloadedFileName::Guessed(id.to_owned())),
+              url.name().unwrap_or_else(|| PasteFileName::Guessed(id.to_owned())),
               content))));
             if let Err(e) = tx_res {
               error!("could not send result over channel: {}", e);
@@ -237,32 +237,32 @@ impl ::std::fmt::Display for BinFeature {
 #[serde(rename_all = "snake_case")]
 pub enum PasteUrl {
   Html {
-    name: Option<DownloadedFileName>,
+    name: Option<PasteFileName>,
     url: String
   },
   Raw {
-    name: Option<DownloadedFileName>,
+    name: Option<PasteFileName>,
     url: String
   },
   Downloaded(String, DownloadedFile)
 }
 
 impl PasteUrl {
-  pub fn html(name: Option<DownloadedFileName>, url: String) -> PasteUrl {
+  pub fn html(name: Option<PasteFileName>, url: String) -> PasteUrl {
     PasteUrl::Html {
       name: name,
       url: url
     }
   }
 
-  pub fn raw(name: Option<DownloadedFileName>, url: String) -> PasteUrl {
+  pub fn raw(name: Option<PasteFileName>, url: String) -> PasteUrl {
     PasteUrl::Raw {
       name: name,
       url: url
     }
   }
 
-  pub fn name(&self) -> Option<DownloadedFileName> {
+  pub fn name(&self) -> Option<PasteFileName> {
     match *self {
       PasteUrl::Html { ref name, .. } |
       PasteUrl::Raw { ref name, .. } => name.clone(),

@@ -28,12 +28,12 @@ pub enum Paste {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct DownloadedFile {
-  pub name: DownloadedFileName,
+  pub name: PasteFileName,
   pub content: String
 }
 
 impl DownloadedFile {
-  pub fn new(name: DownloadedFileName, content: String) -> DownloadedFile {
+  pub fn new(name: PasteFileName, content: String) -> DownloadedFile {
     DownloadedFile {
       name: name,
       content: content
@@ -43,16 +43,16 @@ impl DownloadedFile {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub enum DownloadedFileName {
+pub enum PasteFileName {
   Explicit(String),
   Guessed(String)
 }
 
-impl DownloadedFileName {
+impl PasteFileName {
   pub fn name(&self) -> String {
     match *self {
-      DownloadedFileName::Explicit(ref name) |
-      DownloadedFileName::Guessed(ref name) => name.clone()
+      PasteFileName::Explicit(ref name) |
+      PasteFileName::Guessed(ref name) => name.clone()
     }
   }
 }

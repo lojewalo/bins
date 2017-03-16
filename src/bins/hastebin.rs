@@ -91,9 +91,9 @@ impl CreatesHtmlUrls for Hastebin {
             return Err(BinsError::Other);
           }
         };
-        Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(DownloadedFileName::Explicit(name)), self.format_html_url(&id).unwrap())).collect())
+        Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(PasteFileName::Explicit(name)), self.format_html_url(&id).unwrap())).collect())
       },
-      Err(_) => Ok(vec![PasteUrl::Downloaded(html_url, DownloadedFile::new(DownloadedFileName::Guessed(id.to_owned()), content))])
+      Err(_) => Ok(vec![PasteUrl::Downloaded(html_url, DownloadedFile::new(PasteFileName::Guessed(id.to_owned()), content))])
     }
   }
 
@@ -120,9 +120,9 @@ impl CreatesRawUrls for Hastebin {
             return Err(BinsError::Other);
           }
         };
-        Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(DownloadedFileName::Explicit(name)), self.format_raw_url(&id).unwrap())).collect())
+        Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(PasteFileName::Explicit(name)), self.format_raw_url(&id).unwrap())).collect())
       },
-      Err(_) => Ok(vec![PasteUrl::Downloaded(raw_url, DownloadedFile::new(DownloadedFileName::Guessed(id.to_owned()), content))])
+      Err(_) => Ok(vec![PasteUrl::Downloaded(raw_url, DownloadedFile::new(PasteFileName::Guessed(id.to_owned()), content))])
     }
   }
 
@@ -153,7 +153,7 @@ impl UploadsSingleFiles for Hastebin {
     if let Ok(success) = success {
       debug!(target: "hastebin", "upload was a success. creating html url");
       let url = self.format_html_url(&success.key).unwrap();
-      return Ok(PasteUrl::html(Some(DownloadedFileName::Explicit(file.name.clone())), url));
+      return Ok(PasteUrl::html(Some(PasteFileName::Explicit(file.name.clone())), url));
     }
     debug!(target: "hastebin", "parse was a failure, try to parse as error");
     let error: JsonResult<HastebinError> = serde_json::from_str(&content);
