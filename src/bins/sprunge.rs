@@ -1,6 +1,7 @@
 use url::Url;
 use url::form_urlencoded;
 use hyper::Client;
+use serde_json;
 
 use lib::*;
 use lib::Result;
@@ -73,7 +74,7 @@ impl FormatsRawUrls for Sprunge {
 
 impl CreatesHtmlUrls for Sprunge {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
-    Ok(vec![PasteUrl::html(None, self.create_url(id))])
+    self.create_raw_url(id)
   }
 
   fn id_from_html_url(&self, url: &str) -> Option<String> {
@@ -83,7 +84,30 @@ impl CreatesHtmlUrls for Sprunge {
 
 impl CreatesRawUrls for Sprunge {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
-    Ok(vec![PasteUrl::raw(None, self.create_url(id))])
+    let url = self.create_url(id);
+    let mut res = self.client.get(&url).send().map_err(BinsError::Http)?;
+    let mut content = String::new();
+    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    if res.status.class().default_code() != ::hyper::Ok {
+      debug!("bad status code");
+      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+    }
+    let parsed: serde_json::Result<Vec<IndexedFile>> = serde_json::from_str(&content);
+    match parsed {
+      Ok(is) => {
+        debug!("file was an index, so checking its urls");
+        let ids: Option<Vec<(String, String)>> = is.iter().map(|x| self.id_from_html_url(&x.url).map(|i| (x.name.clone(), i))).collect();
+        let ids = match ids {
+          Some(i) => i,
+          None => {
+            debug!("could not parse an ID from one of the URLs in the index");
+            return Err(BinsError::Other);
+          }
+        };
+        Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(PasteFileName::Explicit(name)), self.create_url(&id))).collect())
+      },
+      Err(_) => Ok(vec![PasteUrl::Downloaded(url, DownloadedFile::new(PasteFileName::Guessed(id.to_owned()), content))])
+    }
   }
 
   fn id_from_raw_url(&self, url: &str) -> Option<String> {

@@ -79,6 +79,10 @@ impl CreatesHtmlUrls for Hastebin {
     let mut res = self.client.get(&raw_url).send().map_err(BinsError::Http)?;
     let mut content = String::new();
     res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    if res.status.class().default_code() != ::hyper::Ok {
+      debug!("bad status code");
+      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+    }
     let parsed: serde_json::Result<Vec<IndexedFile>> = serde_json::from_str(&content);
     match parsed {
       Ok(is) => {
@@ -104,10 +108,15 @@ impl CreatesHtmlUrls for Hastebin {
 
 impl CreatesRawUrls for Hastebin {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
+    debug!("creating raw url for {}", id);
     let raw_url = self.format_raw_url(id).unwrap();
     let mut res = self.client.get(&raw_url).send().map_err(BinsError::Http)?;
     let mut content = String::new();
     res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    if res.status.class().default_code() != ::hyper::Ok {
+      debug!("bad status code");
+      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+    }
     let parsed: serde_json::Result<Vec<IndexedFile>> = serde_json::from_str(&content);
     match parsed {
       Ok(is) => {

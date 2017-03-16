@@ -56,9 +56,16 @@ impl Gist {
   }
 
   fn get_gist(&self, id: &str) -> Result<RemoteGistPaste> {
+    debug!("getting gist for ID {}", id);
     let builder = self.client.get(&format!("https://api.github.com/gists/{}", id));
-    let res = self.add_headers(builder).send().map_err(BinsError::Http)?;
-    serde_json::from_reader(res).map_err(BinsError::Json)
+    let mut res = self.add_headers(builder).send().map_err(BinsError::Http)?;
+    let mut content = String::new();
+    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    if res.status.class().default_code() != ::hyper::Ok {
+      debug!("bad status code");
+      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+    }
+    serde_json::from_str(&content).map_err(BinsError::Json)
   }
 }
 

@@ -50,6 +50,19 @@ use log::LogLevel;
 
 use url::Url;
 
+macro_rules! report_error_using {
+  ($using: ident, $fmt: expr, $e: expr $(, $args: expr),*) => {{
+    $using!($fmt, $e, $($args)*);
+    for error in error_parents(&$e) {
+      $using!("{}", error);
+    }
+  }}
+}
+
+macro_rules! report_error {
+  ($fmt: expr, $e: expr $(, $args: expr),*) => (report_error_using!(error, $fmt, $e $(, $args)*))
+}
+
 fn main() {
   std::process::exit(inner());
 }
@@ -58,10 +71,7 @@ fn inner() -> i32 {
   let config = match get_config() {
     Ok(c) => c,
     Err(e) => {
-      println!("could not create or load bins config file: {}", e);
-      for error in error_parents(&e) {
-        println!("{}", error);
-      }
+      report_error_using!(println, "could not create or load bins config file: {}", e);
       return 1;
     }
   };
@@ -148,7 +158,8 @@ fn inner() -> i32 {
     LogLevel::Info
   };
   if let Err(e) = logger::Logger::new(level).init() {
-    println!("could not initialize logger: {}", e);
+    report_error_using!(println, "could not initialize logger: {}", e);
+    return 1;
   }
 
   let mut cli_options = CommandLineOptions::default();
@@ -275,16 +286,13 @@ impl<'a> Bins<'a> {
     let upload_files = match upload_files {
       Ok(u) => u,
       Err(e) => {
-        error!("could not get input: {}", e);
+        report_error!("could not get input: {}", e);
         return 1;
       }
     };
     match bin.upload(&upload_files, self.cli_options.url_output.is_none()) {
       Err(e) => {
-        error!("error uploading to {}: {}", bin.name(), e);
-        for error in error_parents(&e) {
-          error!("{}", error);
-        }
+        report_error!("error uploading to {1}: {0}", e, bin.name());
         return 1;
       },
       Ok(urls) => {
@@ -304,10 +312,7 @@ impl<'a> Bins<'a> {
               None => match bin.create_raw_url(&id) {
                 Ok(u) => u.into_iter().map(|x| x.url().to_owned()).collect(),
                 Err(e) => {
-                  error!("error converting HTML URL to raw URL: {}", e);
-                  for error in error_parents(&e) {
-                    error!("{}", error);
-                  }
+                  report_error!("error converting HTML URL to raw URL: {}", e);
                   error!("outputting HTML URL instead");
                   println!("{}", u.url());
                   return 1;
@@ -368,10 +373,7 @@ impl<'a> Bins<'a> {
       let urls = match urls {
         Ok(us) => us,
         Err(e) => {
-          error!("error creating URLs from ID: {}", e);
-          for error in error_parents(&e) {
-            error!("{}", error);
-          }
+          report_error!("error creating URLs from ID: {}", e);
           return 1;
         }
       };
@@ -383,7 +385,7 @@ impl<'a> Bins<'a> {
     let download = match bin.download(&id, names) {
       Ok(d) => d,
       Err(e) => {
-        error!("could not download ID {}: {}", id, e);
+        report_error!("could not download ID {1}: {0}", e, id);
         return 1;
       }
     };
@@ -391,7 +393,7 @@ impl<'a> Bins<'a> {
       match serde_json::to_string(&download) {
         Ok(j) => println!("{}", j),
         Err(e) => {
-          error!("error converting download to json: {}", e);
+          report_error!("error converting download to json: {}", e);
           return 1;
         }
       }

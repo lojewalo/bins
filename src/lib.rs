@@ -183,6 +183,14 @@ impl<T> Downloads for T
               }
               return;
             }
+            if res.status.class().default_code() != ::hyper::Ok {
+              debug!("bad status code");
+              let e = BinsError::InvalidStatus(res.status_raw().0, Some(content));
+              if let Err(tx_e) = tx_clone.send(Err(e)) {
+                error!("error sending result over channel: {}", tx_e);
+              }
+              return;
+            }
             let tx_res = tx_clone.send(Ok(Some(DownloadedFile::new(
               url.name().unwrap_or_else(|| PasteFileName::Guessed(id.to_owned())),
               content))));

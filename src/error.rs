@@ -36,8 +36,10 @@ impl Display for BinsError {
     if let BinsError::BinError(ref s) = *self {
       write!(f, "the bin responded with the following error: {}", s)
     } else if let BinsError::InvalidStatus(code, ref s) = *self {
-      let content = s.clone().unwrap_or_default();
-      write!(f, "the bin responded with an invalid status ({}) {}", code, content)
+      match *s {
+        Some(ref string) => write!(f, "the bin responded with an invalid status ({})\nthe bin also included this content with the error:\n\n{}", code, string),
+        None => write!(f, "the bin responded with an invalid status ({})", code)
+      }
     } else {
       write!(f, "{}", self.description())
     }
