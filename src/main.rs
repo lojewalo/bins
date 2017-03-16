@@ -225,7 +225,7 @@ impl<'a> Bins<'a> {
     let inputs: Option<Vec<&str>> = self.matches.values_of("inputs").map(|x| x.collect());
     if let Some(ref is) = inputs {
       if !is.is_empty() {
-        let url: Result<Url> = Url::parse(&is[0]).map_err(BinsError::UrlParse);
+        let url: Result<Url> = Url::parse(is[0]).map_err(BinsError::UrlParse);
         if let Ok(u) = url {
           return self.download(u, if is.len() > 1 { Some(&is[1..]) } else { None });
         }
@@ -349,7 +349,7 @@ impl<'a> Bins<'a> {
     let cookie = Cookie::open(flags::NONE).map_err(BinsError::Magic)?;
     cookie.load(&[""; 0]).map_err(BinsError::Magic)?;
     for upload_file in files {
-      let kind = cookie.buffer(&upload_file.content.as_bytes()).map_err(BinsError::Magic)?;
+      let kind = cookie.buffer(upload_file.content.as_bytes()).map_err(BinsError::Magic)?;
       if let Some(ref disallowed) = self.config.safety.disallowed_file_types {
         if disallowed.contains(&kind) {
           return Err(BinsError::InvalidFileType {
