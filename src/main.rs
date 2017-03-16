@@ -45,7 +45,7 @@ use std::io::{Seek, SeekFrom};
 use std::io::{Read, Write};
 use std::io::Result as IoResult;
 use std::error::Error;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use log::LogLevel;
@@ -191,7 +191,7 @@ fn inner() -> i32 {
   let config = Arc::new(config);
   let cli_options = Arc::new(cli_options);
 
-  let bins: HashMap<String, Box<Bin>> = {
+  let bins: BTreeMap<String, Box<Bin>> = {
     let bins: Vec<Box<Bin>> = vec![
       box bins::Sprunge::new(config.clone(), cli_options.clone()),
       box bins::Hastebin::new(config.clone(), cli_options.clone()),
@@ -211,7 +211,7 @@ fn inner() -> i32 {
 }
 
 struct Bins<'a> {
-  bins: HashMap<String, Box<Bin>>,
+  bins: BTreeMap<String, Box<Bin>>,
   config: Arc<Config>,
   cli_options: Arc<CommandLineOptions>,
   matches: ArgMatches<'a>
