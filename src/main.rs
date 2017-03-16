@@ -166,12 +166,13 @@ fn inner() -> i32 {
   let config = Arc::new(config);
   let cli_options = Arc::new(cli_options);
 
-  let bins: HashMap<&str, Box<Bin>> = {
-    let mut map: HashMap<&str, Box<Bin>> = HashMap::new();
-    map.insert("sprunge", box bins::Sprunge::new(config.clone(), cli_options.clone()));
-    map.insert("hastebin", box bins::Hastebin::new(config.clone(), cli_options.clone()));
-    map.insert("gist", box bins::Gist::new(config.clone(), cli_options.clone()));
-    map
+  let bins: HashMap<String, Box<Bin>> = {
+    let bins: Vec<Box<Bin>> = vec![
+      box bins::Sprunge::new(config.clone(), cli_options.clone()),
+      box bins::Hastebin::new(config.clone(), cli_options.clone()),
+      box bins::Gist::new(config.clone(), cli_options.clone())
+    ];
+    bins.into_iter().map(|b| (b.name().to_owned(), b)).collect()
   };
 
   let b = Bins {
@@ -185,7 +186,7 @@ fn inner() -> i32 {
 }
 
 struct Bins<'a> {
-  bins: HashMap<&'static str, Box<Bin>>,
+  bins: HashMap<String, Box<Bin>>,
   config: Arc<Config>,
   cli_options: Arc<CommandLineOptions>,
   matches: ArgMatches<'a>
