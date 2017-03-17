@@ -112,6 +112,8 @@ impl<T> Uploads for T
         let upload = result?;
         urls.push(IndexedFile::new(name, upload.url().to_owned()));
       }
+      debug!("sorting uploads");
+      urls.sort_by_key(|i| i.name.clone());
       Ok(())
     })?;
     if index {
@@ -211,6 +213,7 @@ impl<T> Downloads for T
           contents.push(f);
         }
       }
+      debug!("sorting downloads");
       contents.sort_by_key(|f| f.name.name());
       Ok(())
     })?;

@@ -7,22 +7,16 @@ use lib::*;
 use lib::Result;
 use lib::error::*;
 use lib::files::*;
-use config::{Config, CommandLineOptions};
 
 use std::io::Read;
-use std::sync::Arc;
 
 pub struct Sprunge {
-  config: Arc<Config>,
-  cli: Arc<CommandLineOptions>,
   client: Client
 }
 
 impl Sprunge {
-  pub fn new(config: Arc<Config>, cli: Arc<CommandLineOptions>) -> Sprunge {
+  pub fn new() -> Sprunge {
     Sprunge {
-      config: config,
-      cli: cli,
       client: Client::new()
     }
   }

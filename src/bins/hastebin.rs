@@ -9,25 +9,19 @@ use lib::*;
 use lib::Result;
 use lib::error::*;
 use lib::files::*;
-use config::{Config, CommandLineOptions};
 
 use std::io::Read;
-use std::sync::Arc;
 
 pub struct Hastebin {
-  config: Arc<Config>,
-  cli: Arc<CommandLineOptions>,
   client: Client
 }
 
 impl Hastebin {
-  pub fn new(config: Arc<Config>, cli: Arc<CommandLineOptions>) -> Hastebin {
+  pub fn new() -> Hastebin {
     let ssl = OpensslClient::new().unwrap();
     let connector = HttpsConnector::new(ssl);
     let client = Client::with_connector(connector);
     Hastebin {
-      config: config,
-      cli: cli,
       client: client
     }
   }

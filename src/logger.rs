@@ -13,14 +13,6 @@ impl Logger {
     }
   }
 
-  pub fn max_level(&self) -> &LogLevel {
-    &self.max_level
-  }
-
-  pub fn set_max_level(&mut self, level: LogLevel) {
-    self.max_level = level;
-  }
-
   pub fn init(self) -> Result<(), SetLoggerError> {
     set_logger(|max_log_level| {
       max_log_level.set(LogLevelFilter::Debug);

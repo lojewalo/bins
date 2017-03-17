@@ -201,8 +201,8 @@ fn inner() -> i32 {
 
   let bins: BTreeMap<String, Box<Bin>> = {
     let bins: Vec<Box<Bin>> = vec![
-      box bins::Sprunge::new(config.clone(), cli_options.clone()),
-      box bins::Hastebin::new(config.clone(), cli_options.clone()),
+      box bins::Sprunge::new(),
+      box bins::Hastebin::new(),
       box bins::Gist::new(config.clone(), cli_options.clone())
     ];
     bins.into_iter().map(|b| (b.name().to_owned(), b)).collect()

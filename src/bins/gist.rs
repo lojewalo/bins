@@ -90,13 +90,13 @@ impl CreatesUrls for Gist {}
 impl FormatsUrls for Gist {}
 
 impl FormatsHtmlUrls for Gist {
-  fn format_html_url(&self, id: &str) -> Option<String> {
+  fn format_html_url(&self, _: &str) -> Option<String> {
     None
   }
 }
 
 impl FormatsRawUrls for Gist {
-  fn format_raw_url(&self, id: &str) -> Option<String> {
+  fn format_raw_url(&self, _: &str) -> Option<String> {
     None
   }
 }
