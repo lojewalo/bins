@@ -207,7 +207,12 @@ fn inner() -> i32 {
     matches: matches
   };
 
-  b.main()
+  if let Err(e) = b.main() {
+    report_error!("error: {}", e);
+    1
+  } else {
+    0
+  }
 }
 
 struct Bins<'a> {
@@ -218,20 +223,26 @@ struct Bins<'a> {
 }
 
 impl<'a> Bins<'a> {
-  fn main(&self) -> i32 {
+  fn main(&self) -> Result<()> {
     if self.matches.is_present("list-bins") {
-      return self.list_bins();
+      self.list_bins();
+      return Ok(()); // FIXME
     }
-    let inputs: Option<Vec<&str>> = self.matches.values_of("inputs").map(|x| x.collect());
+    let inputs = self.raw_inputs();
     if let Some(ref is) = inputs {
       if !is.is_empty() {
         let url: Result<Url> = Url::parse(is[0]).map_err(BinsError::UrlParse);
         if let Ok(u) = url {
-          return self.download(u, if is.len() > 1 { Some(&is[1..]) } else { None });
+          self.download(u, if is.len() > 1 { Some(&is[1..]) } else { None }); // FIXME
+          return Ok(());
         }
       }
     }
     self.upload(inputs)
+  }
+
+  fn raw_inputs(&self) -> Option<Vec<&str>> {
+    self.matches.values_of("inputs").map(|x| x.collect())
   }
 
   fn list_bins(&self) -> i32 {
@@ -252,26 +263,30 @@ impl<'a> Bins<'a> {
     0
   }
 
-  fn upload(&self, inputs: Option<Vec<&str>>) -> i32 {
-    let bin_name = self.matches.value_of("bin").map(|x| x.to_owned()).or_else(|| self.config.defaults.bin.clone()).expect("no bin specified");
-    let possible_bin = self.bins.get(bin_name.as_str());
-    let bin = match possible_bin {
-      Some(b) => b,
-      None => {
-        error!("there is no bin called \"{}\"", bin_name);
-        return 1;
-      }
-    };
+  fn cli_features(&self) -> HashMap<BinFeature, Option<bool>> {
+    let mut map = HashMap::new();
+    map.insert(BinFeature::Private, self.cli_options.private);
+    map.insert(BinFeature::Public, self.cli_options.private.map(|x| !x));
+    map.insert(BinFeature::Authed, self.cli_options.authed);
+    map.insert(BinFeature::Anonymous, self.cli_options.authed.map(|x| !x));
+    map
+  }
 
+  fn bin_name(&self) -> Result<String> {
+    self.matches.value_of("bin")
+      .map(|x| x.to_owned())
+      .or_else(|| self.config.defaults.bin.clone())
+      .ok_or_else(|| BinsError::Main(MainError::NoBinSpecified))
+  }
+
+  fn bin(&self) -> Result<&Box<Bin>> {
+    let name = self.bin_name()?;
+    self.bins.get(&name).ok_or_else(|| BinsError::Main(MainError::NoSuchBin(name)))
+  }
+
+  fn check_features(&self, bin: &Box<Bin>) -> Result<()> {
     let bin_features = bin.features();
-    let features = {
-      let mut map = HashMap::new();
-      map.insert(BinFeature::Private, self.cli_options.private);
-      map.insert(BinFeature::Public, self.cli_options.private.map(|x| !x));
-      map.insert(BinFeature::Authed, self.cli_options.authed);
-      map.insert(BinFeature::Anonymous, self.cli_options.authed.map(|x| !x));
-      map
-    };
+    let features = self.cli_features();
     for (feature, status) in features {
       if let Some(true) = status {
         if !bin_features.contains(&feature) {
@@ -279,14 +294,16 @@ impl<'a> Bins<'a> {
             warn!("{} does not support {} pastes", bin.name(), feature);
           }
           if let Some(true) = self.config.safety.cancel_on_unsupported {
-            error!("bins stopped because an unsupported feature was used with {}", bin.name());
-            return 1;
+            return Err(BinsError::Main(MainError::UnsupportedFeature(bin.name().to_owned(), feature)));
           }
         }
       }
     }
+    Ok(())
+  }
 
-    let upload_files = match inputs {
+  fn inputs(&self, inputs: Option<Vec<&str>>) -> Result<Vec<UploadFile>> {
+    match inputs {
       Some(v) => get_upload_files(v),
       None => {
         if let Some(message) = self.matches.value_of("message") {
@@ -295,62 +312,41 @@ impl<'a> Bins<'a> {
           get_stdin().map(|x| vec![x])
         }
       }
-    };
-    let upload_files = match upload_files {
-      Ok(u) => u,
-      Err(e) => {
-        report_error!("could not get input: {}", e);
-        return 1;
-      }
-    };
-    #[cfg(feature = "file_type_checking")]
-    {
-      if let Err(e) = self.check_file_types(&upload_files) {
-        report_error!("error while checking file types: {}", e);
-        return 1;
-      }
     }
-    match bin.upload(&upload_files, self.cli_options.url_output.is_none()) {
-      Err(e) => {
-        report_error!("error uploading to {1}: {0}", e, bin.name());
-        return 1;
-      },
-      Ok(urls) => {
-        if let Some(UrlOutputMode::Raw) = self.cli_options.url_output {
-          for u in urls {
-            let id = match bin.id_from_html_url(u.url()) {
-              Some(i) => i,
-              None => {
-                error!("could not parse ID from HTML URL");
-                error!("outputting HTML URL instead");
-                println!("{}", u.url());
-                return 1;
-              }
-            };
-            let raw_urls = match bin.format_raw_url(&id) {
-              Some(u) => vec![u],
-              None => match bin.create_raw_url(&id) {
-                Ok(u) => u.into_iter().map(|x| x.url().to_owned()).collect(),
-                Err(e) => {
-                  report_error!("error converting HTML URL to raw URL: {}", e);
-                  error!("outputting HTML URL instead");
-                  println!("{}", u.url());
-                  return 1;
-                }
-              }
-            };
-            for raw_url in raw_urls {
-              println!("{}", raw_url);
-            }
-          }
-        } else {
-          for url in urls {
-            println!("{}", url.url());
-          }
+  }
+
+  fn url_output(&self, bin: &Box<Bin>, urls: &[PasteUrl]) -> Result<()> {
+    for u in urls {
+      let id = bin.id_from_html_url(u.url()).ok_or_else(|| BinsError::Main(MainError::ParseId))?;
+      let raw_urls = match bin.format_raw_url(&id) {
+        Some(u) => vec![u],
+        None => {
+          let raw_url = bin.create_raw_url(&id)?;
+          raw_url.into_iter().map(|x| x.url().to_owned()).collect()
         }
+      };
+      for raw_url in raw_urls {
+        println!("{}", raw_url);
       }
     }
-    0
+    Ok(())
+  }
+
+  fn upload(&self, inputs: Option<Vec<&str>>) -> Result<()> {
+    let bin = self.bin()?;
+    self.check_features(bin)?;
+
+    let upload_files = self.inputs(inputs)?;
+    #[cfg(feature = "file_type_checking")]
+    self.check_file_types(&upload_files)?;
+    let urls = bin.upload(&upload_files, self.cli_options.url_output.is_none())?;
+    if let Some(UrlOutputMode::Raw) = self.cli_options.url_output {
+      return self.url_output(bin, &urls);
+    }
+    for url in urls {
+      println!("{}", url.url());
+    }
+    Ok(())
   }
 
   #[cfg(feature = "file_type_checking")]
