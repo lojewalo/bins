@@ -97,7 +97,8 @@ pub enum MainError {
   NoSuchBin(String),
   NoBinSpecified,
   UnsupportedFeature(String, BinFeature),
-  ParseId
+  ParseId,
+  NameWithMultipleFiles
 }
 
 impl MainError {
@@ -106,7 +107,8 @@ impl MainError {
       MainError::NoSuchBin(ref bin) => format!("there is no bin called \"{}\"", bin),
       MainError::NoBinSpecified => String::from("no bin was specified"),
       MainError::UnsupportedFeature(ref bin, ref feat) => format!("bins stopped because {} does not support {} pastes", bin, feat),
-      MainError::ParseId => String::from("could not parse ID from HTML URL")
+      MainError::ParseId => String::from("could not parse ID from HTML URL"),
+      MainError::NameWithMultipleFiles => String::from("cannot use --name with multiple upload files")
     }
   }
 }

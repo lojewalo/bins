@@ -154,7 +154,8 @@ impl HasFeatures for Gist {
       BinFeature::Private,
       BinFeature::Authed,
       BinFeature::Anonymous,
-      BinFeature::MultiFile]
+      BinFeature::MultiFile,
+      BinFeature::SingleNaming]
   }
 }
 

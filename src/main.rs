@@ -156,6 +156,12 @@ fn inner() -> i32 {
         .long("force")
         .short("f")
         .help("force upload, ignoring safety features"))
+      .arg(Arg::with_name("name")
+        .long("name")
+        .short("N")
+        .help("manually set the file name for single-file uploads")
+        .takes_value(true)
+        .value_name("file_name"))
     .get_matches();
 
   let level = if matches.is_present("debug") {
@@ -188,6 +194,10 @@ fn inner() -> i32 {
 
   if matches.is_present("force") {
     cli_options.force = Some(true);
+  }
+
+  if let Some(name) = matches.value_of("name") {
+    cli_options.name = Some(name.to_owned());
   }
 
   if matches.is_present("raw-urls") {
@@ -277,6 +287,7 @@ impl<'a> Bins<'a> {
     map.insert(BinFeature::Public, self.cli_options.private.map(|x| !x));
     map.insert(BinFeature::Authed, self.cli_options.authed);
     map.insert(BinFeature::Anonymous, self.cli_options.authed.map(|x| !x));
+    map.insert(BinFeature::SingleNaming, self.cli_options.name.as_ref().map(|_| true));
     map
   }
 
@@ -317,7 +328,7 @@ impl<'a> Bins<'a> {
   }
 
   fn inputs(&self, inputs: Option<Vec<&str>>) -> Result<Vec<UploadFile>> {
-    match inputs {
+    let mut processed = match inputs {
       Some(v) => get_upload_files(v),
       None => {
         if let Some(message) = self.matches.value_of("message") {
@@ -326,7 +337,15 @@ impl<'a> Bins<'a> {
           get_stdin().map(|x| vec![x])
         }
       }
+    }?;
+    if let Some(ref name) = self.cli_options.name {
+      if processed.len() == 1 {
+        processed[0].name = name.clone();
+      } else {
+        return Err(BinsError::Main(MainError::NameWithMultipleFiles));
+      }
     }
+    Ok(processed)
   }
 
   fn url_output(&self, bin: &Box<Bin>, urls: &[PasteUrl]) -> Result<()> {

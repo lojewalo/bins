@@ -237,12 +237,21 @@ pub enum BinFeature {
   Public,
   Authed,
   Anonymous,
-  MultiFile
+  MultiFile,
+  SingleNaming
 }
 
 impl ::std::fmt::Display for BinFeature {
   fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-    ::std::fmt::Debug::fmt(self, f)
+    let desc = match *self {
+      BinFeature::Private => "private",
+      BinFeature::Public => "public",
+      BinFeature::Authed => "authed",
+      BinFeature::Anonymous => "anonymous",
+      BinFeature::MultiFile => "multiple-file",
+      BinFeature::SingleNaming => "single-file named"
+    };
+    write!(f, "{}", desc)
   }
 }
 
