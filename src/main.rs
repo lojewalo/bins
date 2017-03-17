@@ -152,6 +152,10 @@ fn inner() -> i32 {
         "raw-urls",
         "html-urls",
         "message"]))
+      .arg(Arg::with_name("force")
+        .long("force")
+        .short("f")
+        .help("force upload, ignoring safety features"))
     .get_matches();
 
   let level = if matches.is_present("debug") {
@@ -180,6 +184,10 @@ fn inner() -> i32 {
 
   if matches.is_present("json") {
     cli_options.json = Some(true);
+  }
+
+  if matches.is_present("force") {
+    cli_options.force = Some(true);
   }
 
   if matches.is_present("raw-urls") {
@@ -294,7 +302,13 @@ impl<'a> Bins<'a> {
             warn!("{} does not support {} pastes", bin.name(), feature);
           }
           if let Some(true) = self.config.safety.cancel_on_unsupported {
-            return Err(BinsError::Main(MainError::UnsupportedFeature(bin.name().to_owned(), feature)));
+            return match self.cli_options.force {
+              Some(true) => {
+                warn!("forcing upload with unsupported features");
+                Ok(())
+              },
+              _ => Err(BinsError::Main(MainError::UnsupportedFeature(bin.name().to_owned(), feature)))
+            }
           }
         }
       }
@@ -351,6 +365,7 @@ impl<'a> Bins<'a> {
 
   #[cfg(feature = "file_type_checking")]
   fn check_file_types(&self, files: &[UploadFile]) -> Result<()> {
+
     use magic::{Cookie, flags};
 
     let cookie = Cookie::open(flags::NONE).map_err(BinsError::Magic)?;
@@ -359,10 +374,16 @@ impl<'a> Bins<'a> {
       let kind = cookie.buffer(upload_file.content.as_bytes()).map_err(BinsError::Magic)?;
       if let Some(ref disallowed) = self.config.safety.disallowed_file_types {
         if disallowed.contains(&kind) {
-          return Err(BinsError::InvalidFileType {
-            name: upload_file.name.clone(),
-            kind: kind
-          });
+          return match self.cli_options.force {
+            Some(true) => {
+              warn!("forcing upload with disallowed file type: ({} is {}, which is disallowed)", upload_file.name, kind);
+              Ok(())
+            },
+            _ => Err(BinsError::InvalidFileType {
+              name: upload_file.name.clone(),
+              kind: kind
+            })
+          }
         }
       }
     }

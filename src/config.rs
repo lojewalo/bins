@@ -68,7 +68,8 @@ pub struct CommandLineOptions {
   pub private: Option<bool>,
   pub file_name: Option<String>,
   pub json: Option<bool>,
-  pub url_output: Option<UrlOutputMode>
+  pub url_output: Option<UrlOutputMode>,
+  pub force: Option<bool>
 }
 
 #[derive(Debug)]
