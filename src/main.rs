@@ -217,12 +217,15 @@ fn print_version() {
   let name = crate_name!();
   let version = crate_version!();
   let version_info = VersionInfo::get();
-  let feature_info = get_feature_info().unwrap_or_else(String::new);
+  let feature_info = match get_feature_info() {
+    Some(f) => format!("features: {}\n", f),
+    None => String::new()
+  };
   let git_string = match version_info.git {
     Some(g) => format!("git: {}\n", g),
     None => String::new()
   };
-  println!("{} {}\n\ncompiled: {}\nprofile: {}\n{}features: {}",
+  println!("{} {}\n\ncompiled: {}\nprofile: {}\n{}{}",
     name,
     version,
     version_info.date,
