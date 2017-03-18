@@ -26,6 +26,10 @@ macro_rules! option {
   }}
 }
 
+// TODO: refactor Bins::download
+// TODO: move loose functions into Bins
+// TODO: refactor inner
+
 mod bins;
 mod config;
 mod logger;
@@ -259,6 +263,42 @@ impl<'a> Bins<'a> {
     self.upload(inputs)
   }
 
+  fn file_size_limit(&self) -> Result<Option<u64>> {
+    let s = match self.config.general.file_size_limit {
+      Some(ref x) => x,
+      None => return Ok(None)
+    };
+    let mut size: Vec<char> = Vec::new();
+    let mut unit: Vec<char> = Vec::new();
+    for c in s.trim().chars() {
+      if "0123456789.".contains(c) {
+        if !unit.is_empty() {
+          return Err(BinsError::Main(MainError::InvalidSizeLimit));
+        }
+        size.push(c);
+      } else if "bBkKmMgGiI".contains(c) {
+        unit.push(c);
+      }
+    }
+    let size: f64 = size.into_iter().collect::<String>().parse().map_err(|_| BinsError::Main(MainError::InvalidSizeLimit))?;
+    let unit = unit.into_iter().collect::<String>().to_lowercase();
+    let unit = if unit.is_empty() {
+      1
+    } else {
+      match unit.as_str() {
+        "b" => 1,
+        "kb" => (10 as u64).pow(3),
+        "kib" => (2 as u64).pow(10),
+        "mb" => (10 as u64).pow(6),
+        "mib" => (2 as u64).pow(20),
+        "gb" => (10 as u64).pow(9),
+        "gib" => (2 as u64).pow(30),
+        _ => return Err(BinsError::Main(MainError::InvalidSizeLimit))
+      }
+    };
+    Ok(Some((size * unit as f64).round() as u64))
+  }
+
   fn raw_inputs(&self) -> Option<Vec<&str>> {
     self.matches.values_of("inputs").map(|x| x.collect())
   }
@@ -327,9 +367,49 @@ impl<'a> Bins<'a> {
     Ok(())
   }
 
+  fn get_upload_files(&self, inputs: Vec<&str>) -> Result<Vec<UploadFile>> {
+    let files: Option<Vec<(&str, File)>> = inputs.into_iter()
+      .map(|f| File::open(f).map(|x| Path::new(f).file_name().and_then(|f| f.to_str()).map(|of| (of, x))))
+      .collect::<IoResult<_>>()
+      .map_err(BinsError::Io)?;
+    let files = match files {
+      Some(f) => f,
+      None => {
+        error!("one or more inputs did not have a file name or did not have a valid utf-8 file name");
+        return Err(BinsError::Other);
+      }
+    };
+    let size_limit = self.file_size_limit()?;
+    if let Some(limit) = size_limit {
+      for &(ref name, ref file) in &files {
+        let metadata = file.metadata().map_err(BinsError::Io)?;
+        let size = metadata.len();
+        if size > limit {
+          if let Some(true) = self.cli_options.force {
+            warn!("{} is {} bytes, which is over the {} byte limit", name, size, limit);
+          } else {
+            return Err(BinsError::Main(MainError::FileOverSizeLimit {
+              name: name.to_string(),
+              size: size,
+              limit: limit
+            }));
+          }
+        }
+      }
+    }
+    let contents: Vec<(&str, String)> = files.into_iter()
+      .map(|(n, mut f)| {
+        let mut c = String::new();
+        f.read_to_string(&mut c).map(|_| (n, c))
+      })
+      .collect::<IoResult<_>>()
+      .map_err(BinsError::Io)?;
+    Ok(contents.into_iter().map(|(n, c)| UploadFile::new(n.to_owned(), c)).collect())
+  }
+
   fn inputs(&self, inputs: Option<Vec<&str>>) -> Result<Vec<UploadFile>> {
     let mut processed = match inputs {
-      Some(v) => get_upload_files(v),
+      Some(v) => self.get_upload_files(v),
       None => {
         if let Some(message) = self.matches.value_of("message") {
           Ok(vec![UploadFile::new(String::from("message"), message.to_owned())])
@@ -494,28 +574,6 @@ fn get_stdin() -> Result<UploadFile> {
   let mut stdin = std::io::stdin();
   stdin.read_to_string(&mut content).map_err(BinsError::Io)?;
   Ok(UploadFile::new("stdin".to_owned(), content))
-}
-
-fn get_upload_files(inputs: Vec<&str>) -> Result<Vec<UploadFile>> {
-  let files: Option<Vec<(&str, File)>> = inputs.into_iter()
-    .map(|f| File::open(f).map(|x| Path::new(f).file_name().and_then(|f| f.to_str()).map(|of| (of, x))))
-    .collect::<IoResult<_>>()
-    .map_err(BinsError::Io)?;
-  let files = match files {
-    Some(f) => f,
-    None => {
-      error!("one or more inputs did not have a file name or did not have a valid utf-8 file name");
-      return Err(BinsError::Other);
-    }
-  };
-  let contents: Vec<(&str, String)> = files.into_iter()
-    .map(|(n, mut f)| {
-      let mut c = String::new();
-      f.read_to_string(&mut c).map(|_| (n, c))
-    })
-    .collect::<IoResult<_>>()
-    .map_err(BinsError::Io)?;
-  Ok(contents.into_iter().map(|(n, c)| UploadFile::new(n.to_owned(), c)).collect())
 }
 
 fn error_parents(error: &Error) -> Vec<&Error> {
