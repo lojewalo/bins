@@ -256,7 +256,7 @@ fn get_feature_info() -> Option<String> {
   if features.is_empty() {
     None
   } else {
-    Some(format!("features: {}", features.join(", ")))
+    Some(features.join(", "))
   }
 }
 
@@ -264,8 +264,18 @@ fn print_version() {
   let name = crate_name!();
   let version = crate_version!();
   let extra_version_info = extra_version_info();
-  let feature_info = get_feature_info().map(|x| format!("\n{}", x)).unwrap_or_else(String::new);
-  println!("{} {}\n\n{}{}", name, version, extra_version_info, feature_info);
+  let feature_info = get_feature_info().unwrap_or_else(String::new);
+  let git_string = match extra_version_info.git {
+    Some(g) => format!("git: {}\n", g),
+    None => String::new()
+  };
+  println!("{} {}\n\ncompiled: {}\nprofile: {}\n{}features: {}",
+    name,
+    version,
+    extra_version_info.date,
+    extra_version_info.profile,
+    git_string,
+    feature_info);
 }
 
 struct Bins<'a> {
