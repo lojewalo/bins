@@ -32,7 +32,7 @@ fn main() {
   }
   let (profile, git, date) = get_version();
   let out_dir = env::var("OUT_DIR").unwrap();
-  let dest_path = Path::new(&out_dir).join("extra_version_info.rs");
+  let dest_path = Path::new(&out_dir).join("version_info.rs");
   let mut f = File::create(&dest_path).unwrap();
   f.write_all(format!("
       struct VersionInfo {{
@@ -41,12 +41,14 @@ fn main() {
         date: &'static str
       }}
 
-      fn extra_version_info() -> VersionInfo {{
-          VersionInfo {{
-            profile: \"{}\",
-            git: {},
-            date: \"{}\"
-          }}
+      impl VersionInfo {{
+        fn get() -> VersionInfo {{
+            VersionInfo {{
+              profile: \"{}\",
+              git: {},
+              date: \"{}\"
+            }}
+        }}
       }}
   ",
       profile,

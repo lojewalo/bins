@@ -69,7 +69,7 @@ macro_rules! report_error {
   ($fmt: expr, $e: expr $(, $args: expr),*) => (report_error_using!(error, $fmt, $e $(, $args)*))
 }
 
-include!(concat!(env!("OUT_DIR"), "/extra_version_info.rs"));
+include!(concat!(env!("OUT_DIR"), "/version_info.rs"));
 
 fn main() {
   std::process::exit(inner());
@@ -263,17 +263,17 @@ fn get_feature_info() -> Option<String> {
 fn print_version() {
   let name = crate_name!();
   let version = crate_version!();
-  let extra_version_info = extra_version_info();
+  let version_info = VersionInfo::get();
   let feature_info = get_feature_info().unwrap_or_else(String::new);
-  let git_string = match extra_version_info.git {
+  let git_string = match version_info.git {
     Some(g) => format!("git: {}\n", g),
     None => String::new()
   };
   println!("{} {}\n\ncompiled: {}\nprofile: {}\n{}features: {}",
     name,
     version,
-    extra_version_info.date,
-    extra_version_info.profile,
+    version_info.date,
+    version_info.profile,
     git_string,
     feature_info);
 }
