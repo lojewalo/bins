@@ -1,14 +1,31 @@
 extern crate git2;
 extern crate rustc_version;
 extern crate time;
+#[macro_use]
+extern crate clap;
 
 use git2::{DescribeFormatOptions, DescribeOptions, Repository};
 use rustc_version::Version;
+use clap::Shell;
+
 use std::env;
 use std::fs::File;
 use std::io::{self, Write};
 use std::path::Path;
 use std::process::exit;
+
+include!("src/cli.rs");
+
+fn completions() {
+  let outdir = match env::var_os("OUT_DIR") {
+    None => return,
+    Some(outdir) => outdir,
+  };
+  let mut app = create_app(false);
+  app.gen_completions("bins", Shell::Bash, &outdir);
+  app.gen_completions("bins", Shell::Zsh, &outdir);
+  app.gen_completions("bins", Shell::Fish, &outdir);
+}
 
 fn get_version<'a>() -> (String, Option<String>, String) {
   let profile = env::var("PROFILE").unwrap();
@@ -56,4 +73,6 @@ fn main() {
       date)
       .as_bytes())
     .unwrap();
+
+    completions();
 }

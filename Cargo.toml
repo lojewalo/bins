@@ -41,6 +41,7 @@ magic = { version = "0.12", optional = true }
 git2 = "0.6"
 rustc_version = "0.2"
 time = "0.1"
+clap = "2.9"
 
 [profile.release]
 lto = true
