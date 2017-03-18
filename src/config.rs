@@ -70,7 +70,9 @@ pub struct CommandLineOptions {
   pub json: Option<bool>,
   pub url_output: Option<UrlOutputMode>,
   pub force: Option<bool>,
-  pub name: Option<String>
+  pub name: Option<String>,
+  #[cfg(feature = "clipboard_support")]
+  pub copy: Option<bool>
 }
 
 #[derive(Debug)]

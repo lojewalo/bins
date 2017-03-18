@@ -1,6 +1,8 @@
 use clap::{App, Arg, AppSettings};
 
-pub fn create_app(has_default_bin: bool) -> App<'static, 'static> {
+type StaticApp = App<'static, 'static>;
+
+fn base_app(has_default_bin: bool) -> StaticApp {
   App::new(crate_name!())
     .about("A tool for pasting from the terminal")
     .author(crate_authors!())
@@ -89,4 +91,26 @@ pub fn create_app(has_default_bin: bool) -> App<'static, 'static> {
         .short("v")
         .help("print version information and exit")
         .overrides_with("bin"))
+}
+
+pub fn add_feature_options(app: StaticApp) -> StaticApp {
+  if cfg!(feature = "clipboard_support") {
+    app
+      .arg(Arg::with_name("copy")
+        .long("copy")
+        .short("C")
+        .help("copy the output to the clipboard")
+        .conflicts_with("no-copy"))
+      .arg(Arg::with_name("no-copy")
+        .long("no-copy")
+        .short("c")
+        .help("do not copy the output to the clipboard"))
+  } else {
+    app
+  }
+}
+
+pub fn create_app(has_default_bin: bool) -> StaticApp {
+  let app = base_app(has_default_bin);
+  add_feature_options(app)
 }

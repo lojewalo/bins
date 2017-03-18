@@ -104,7 +104,9 @@ pub enum MainError {
     name: String,
     size: u64,
     limit: u64
-  }
+  },
+  MissingHost,
+  NoSuchHost(String)
 }
 
 impl MainError {
@@ -113,7 +115,7 @@ impl MainError {
       MainError::NoSuchBin(ref bin) => format!("there is no bin called \"{}\"", bin),
       MainError::NoBinSpecified => String::from("no bin was specified"),
       MainError::UnsupportedFeature(ref bin, ref feat) => format!("bins stopped because {} does not support {} pastes", bin, feat),
-      MainError::ParseId => String::from("could not parse ID from HTML URL"),
+      MainError::ParseId => String::from("could not parse ID from URL"),
       MainError::NameWithMultipleFiles => String::from("cannot use --name with multiple upload files"),
       MainError::InvalidSizeLimit => String::from("the file size limit specified in the config is invalid"),
       MainError::FileOverSizeLimit { ref name, size, limit } => format!("{} is {} byte{}, which is over the size limit of {} byte{}",
@@ -121,7 +123,9 @@ impl MainError {
         size,
         if size == 1 { "" } else { "s" },
         limit,
-        if limit == 1 { "" } else { "s" })
+        if limit == 1 { "" } else { "s" }),
+      MainError::MissingHost => String::from("url was missing a host"),
+      MainError::NoSuchHost(ref host) => format!("no bin uses the hostname {}", host)
     }
   }
 }

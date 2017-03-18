@@ -16,6 +16,8 @@ extern crate log;
 extern crate time;
 #[cfg(feature = "file_type_checking")]
 extern crate magic;
+#[cfg(feature = "clipboard_support")]
+extern crate clipboard;
 
 macro_rules! option {
   ($e: expr) => {{
@@ -135,6 +137,15 @@ fn inner() -> i32 {
     cli_options.url_output = Some(UrlOutputMode::Html);
   }
 
+  #[cfg(feature = "clipboard_support")]
+  {
+    if matches.is_present("copy") {
+      cli_options.copy = Some(true);
+    } else if matches.is_present("no-copy") {
+      cli_options.copy = Some(false);
+    }
+  }
+
   let config = Arc::new(config);
   let cli_options = Arc::new(cli_options);
 
@@ -154,11 +165,36 @@ fn inner() -> i32 {
     matches: matches
   };
 
-  if let Err(e) = b.main() {
-    report_error!("error: {}", e);
-    1
-  } else {
-    0
+  match b.main() {
+    Ok(s) => {
+      #[cfg(feature = "clipboard_support")]
+      copy(&b, &s);
+      println!("{}", s);
+      0
+    },
+    Err(e) => {
+      report_error!("error: {}", e);
+      1
+    }
+  }
+}
+
+#[cfg(feature = "clipboard_support")]
+fn copy(bins: &Bins, string: &str) {
+  if let Some(true) = bins.cli_options.copy.or(bins.config.defaults.copy) {
+    use clipboard::{ClipboardContext, ClipboardProvider};
+
+    let mut ctx = match ClipboardContext::new() {
+      Ok(c) => c,
+      Err(e) => {
+        error!("error while opening the clipboard: {}", e);
+        return;
+      }
+    };
+
+    if let Err(e) = ctx.set_contents(string.to_owned()) {
+      error!("error while copying output to the clipboard: {}", e);
+    }
   }
 }
 
@@ -166,6 +202,9 @@ fn get_feature_info() -> Option<String> {
   let mut features = Vec::new();
   if cfg!(feature = "file_type_checking") {
     features.push("file_type_checking");
+  }
+  if cfg!(feature = "clipboard_support") {
+    features.push("clipboard_support");
   }
   if features.is_empty() {
     None
@@ -200,18 +239,16 @@ struct Bins<'a> {
 }
 
 impl<'a> Bins<'a> {
-  fn main(&self) -> Result<()> {
+  fn main(&self) -> Result<String> {
     if self.matches.is_present("list-bins") {
-      self.list_bins();
-      return Ok(()); // FIXME
+      return self.list_bins();
     }
     let inputs = self.raw_inputs();
     if let Some(ref is) = inputs {
       if !is.is_empty() {
         let url: Result<Url> = Url::parse(is[0]).map_err(BinsError::UrlParse);
         if let Ok(u) = url {
-          self.download(u, if is.len() > 1 { Some(&is[1..]) } else { None }); // FIXME
-          return Ok(());
+          return self.download(u, if is.len() > 1 { Some(&is[1..]) } else { None }); // FIXME
         }
       }
     }
@@ -258,22 +295,13 @@ impl<'a> Bins<'a> {
     self.matches.values_of("inputs").map(|x| x.collect())
   }
 
-  fn list_bins(&self) -> i32 {
+  fn list_bins(&self) -> Result<String> {
     if let Some(true) = self.cli_options.json {
       let names: Vec<&String> = self.bins.keys().collect();
-      match serde_json::to_string(&names) {
-        Ok(j) => println!("{}", j),
-        Err(e) => {
-          report_error!("error while encoding JSON: {}", e);
-          return 1;
-        }
-      }
+      serde_json::to_string(&names).map_err(BinsError::Json)
     } else {
-      for name in self.bins.keys() {
-        println!("{}", name);
-      }
+      Ok(self.bins.keys().map(|s| s.clone()).collect::<Vec<_>>().join("\n"))
     }
-    0
   }
 
   fn cli_features(&self) -> HashMap<BinFeature, Option<bool>> {
@@ -383,7 +411,8 @@ impl<'a> Bins<'a> {
     Ok(processed)
   }
 
-  fn url_output(&self, bin: &Box<Bin>, urls: &[PasteUrl]) -> Result<()> {
+  fn url_output(&self, bin: &Box<Bin>, urls: &[PasteUrl]) -> Result<String> {
+    let mut strings = Vec::new();
     for u in urls {
       let id = bin.id_from_html_url(u.url()).ok_or_else(|| BinsError::Main(MainError::ParseId))?;
       let raw_urls = match bin.format_raw_url(&id) {
@@ -394,13 +423,13 @@ impl<'a> Bins<'a> {
         }
       };
       for raw_url in raw_urls {
-        println!("{}", raw_url);
+        strings.push(raw_url);
       }
     }
-    Ok(())
+    Ok(strings.join("\n"))
   }
 
-  fn upload(&self, inputs: Option<Vec<&str>>) -> Result<()> {
+  fn upload(&self, inputs: Option<Vec<&str>>) -> Result<String> {
     let bin = self.bin()?;
     self.check_features(bin)?;
 
@@ -411,10 +440,7 @@ impl<'a> Bins<'a> {
     if let Some(UrlOutputMode::Raw) = self.cli_options.url_output {
       return self.url_output(bin, &urls);
     }
-    for url in urls {
-      println!("{}", url.url());
-    }
-    Ok(())
+    Ok(urls.into_iter().map(|u| u.url().to_string()).collect::<Vec<String>>().join("\n"))
   }
 
   #[cfg(feature = "file_type_checking")]
@@ -444,23 +470,14 @@ impl<'a> Bins<'a> {
     Ok(())
   }
 
-  fn download(&self, url: Url, names: Option<&[&str]>) -> i32 {
-    let host = match url.host_str() {
-      Some(h) => h,
-      None => {
-        error!("invalid url (no host): {}", url.as_str());
-        return 1;
-      }
-    };
+  fn download(&self, url: Url, names: Option<&[&str]>) -> Result<String> {
+    let host = url.host_str().ok_or_else(|| BinsError::Main(MainError::MissingHost))?;
     let (is_html_url, bin) = match self.bins.iter().find(|&(_, b)| b.raw_host() == host) {
       Some(b) => (false, b.1),
       None => {
         match self.bins.iter().find(|&(_, b)| b.html_host() == host) {
           Some(b) => (true, b.1),
-          None => {
-            error!("no bin uses the hostname {}", host);
-            return 1;
-          }
+          None => return Err(BinsError::Main(MainError::NoSuchHost(host.to_owned())))
         }
       }
     };
@@ -469,58 +486,32 @@ impl<'a> Bins<'a> {
     } else {
       bin.id_from_raw_url(url.as_str())
     };
-    let id = match id {
-      Some(i) => i,
-      None => {
-        error!("could not extract paste ID from {}", url.as_str());
-        return 1;
-      }
-    };
+    let id = id.ok_or_else(|| BinsError::Main(MainError::ParseId))?;
     if let Some(ref output_mode) = self.cli_options.url_output {
       let urls = match *output_mode {
         UrlOutputMode::Html => bin.create_html_url(&id),
-        UrlOutputMode::Raw =>bin.create_raw_url(&id)
-      };
-      let urls = match urls {
-        Ok(us) => us,
-        Err(e) => {
-          report_error!("error creating URLs from ID: {}", e);
-          return 1;
-        }
-      };
-      for url in urls {
-        println!("{}", url.url());
-      }
-      return 0;
+        UrlOutputMode::Raw => bin.create_raw_url(&id)
+      }?;
+      return Ok(urls.into_iter().map(|u| u.url().to_string()).collect::<Vec<_>>().join("\n"));
     }
-    let download = match bin.download(&id, names) {
-      Ok(d) => d,
-      Err(e) => {
-        report_error!("could not download ID {1}: {0}", e, id);
-        return 1;
-      }
-    };
+    let download = bin.download(&id, names)?;
     if let Some(true) = self.cli_options.json {
-      match serde_json::to_string(&download) {
-        Ok(j) => println!("{}", j),
-        Err(e) => {
-          report_error!("error converting download to json: {}", e);
-          return 1;
-        }
-      }
+      let j = serde_json::to_string(&download).map_err(BinsError::Json)?;
+      Ok(j)
     } else {
-      match download {
+      let output = match download {
         Paste::Single(f) => {
-          println!("{}", f.content);
+          f.content
         },
         Paste::Multiple(fs) => {
-          for f in fs {
-            println!("==> {} <==\n\n{}", f.name.name(), f.content);
-          }
+          fs.iter()
+            .map(|f| format!("==> {} <==\n\n{}", f.name.name(), f.content))
+            .collect::<Vec<_>>()
+            .join("\n")
         }
-      }
+      };
+      Ok(output)
     }
-    0
   }
 }
 
