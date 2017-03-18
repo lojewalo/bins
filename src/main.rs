@@ -69,6 +69,8 @@ macro_rules! report_error {
   ($fmt: expr, $e: expr $(, $args: expr),*) => (report_error_using!(error, $fmt, $e $(, $args)*))
 }
 
+include!(concat!(env!("OUT_DIR"), "/extra_version_info.rs"));
+
 fn main() {
   std::process::exit(inner());
 }
@@ -82,13 +84,12 @@ fn inner() -> i32 {
     }
   };
 
-  let matches = App::new("bins")
+  let matches = App::new(crate_name!())
     .about("A tool for pasting from the terminal")
     .author(crate_authors!())
     .version(crate_version!())
-    .version_message("print version information and exit")
-    .version_short("v")
     .help_message("print help information and exit")
+    .setting(clap::AppSettings::DisableVersion)
     .arg(Arg::with_name("inputs")
       .help("inputs to the program, either files or URLs")
       .takes_value(true)
@@ -166,6 +167,11 @@ fn inner() -> i32 {
         .help("manually set the file name for single-file uploads")
         .takes_value(true)
         .value_name("file_name"))
+      .arg(Arg::with_name("version")
+        .long("version")
+        .short("v")
+        .help("print version information and exit")
+        .overrides_with("bin"))
     .get_matches();
 
   let level = if matches.is_present("debug") {
@@ -179,6 +185,11 @@ fn inner() -> i32 {
   }
 
   let mut cli_options = CommandLineOptions::default();
+
+  if matches.is_present("version") {
+    print_version();
+    return 0;
+  }
 
   if matches.is_present("public") {
     cli_options.private = Some(false);
@@ -235,6 +246,26 @@ fn inner() -> i32 {
   } else {
     0
   }
+}
+
+fn get_feature_info() -> Option<String> {
+  let mut features = Vec::new();
+  if cfg!(feature = "file_type_checking") {
+    features.push("file_type_checking");
+  }
+  if features.is_empty() {
+    None
+  } else {
+    Some(format!("features: {}", features.join(", ")))
+  }
+}
+
+fn print_version() {
+  let name = crate_name!();
+  let version = crate_version!();
+  let extra_version_info = extra_version_info();
+  let feature_info = get_feature_info().map(|x| format!("\n{}", x)).unwrap_or_else(String::new);
+  println!("{} {}\n\n{}{}", name, version, extra_version_info, feature_info);
 }
 
 struct Bins<'a> {
