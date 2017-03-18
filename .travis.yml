@@ -1,16 +1,11 @@
 language: rust
 rust:
-  - stable
-  - beta
-  - nightly
+  - nightly-2017-03-15
 sudo: required
 os:
   - linux
   - osx
 dist: trusty
-matrix:
-  allow_failures:
-    - rust: nightly
 addons:
   apt:
     packages:
@@ -20,7 +15,7 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install libmagic; fi
 script:
-  - cargo build --verbose
+  # - cargo build --verbose
   - cargo build --verbose --no-default-features
   - cargo build --verbose --features file_type_checking
   # Currently no tests
