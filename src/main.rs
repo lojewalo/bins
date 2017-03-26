@@ -144,7 +144,9 @@ fn inner() -> i32 {
   }
 
   if let Some(range) = matches.value_of("range") {
-    cli_options.range = Some(Vec::new()); // FIXME: parse ranges
+    unimplemented!();
+    // FIXME: parse ranges
+    // cli_options.range = Some(Vec::new());
   }
 
   if let Some(name) = matches.value_of("name") {
