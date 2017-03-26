@@ -91,6 +91,18 @@ fn base_app(has_default_bin: bool) -> StaticApp {
         .short("v")
         .help("print version information and exit")
         .overrides_with("bin"))
+      .arg(Arg::with_name("all")
+        .long("all")
+        .short("L")
+        .help("retrieve all files when downloading")
+        .conflicts_with("range"))
+      .arg(Arg::with_name("range")
+        .long("range")
+        .short("n")
+        .help("chooses the files to get in input mode, starting from 0 (e.g. \"0\", \"0,1\", \"0-2\", \"2-0,3\")")
+        .takes_value(true)
+        .value_name("range")
+        .use_delimiter(false))
 }
 
 pub fn add_feature_options(app: StaticApp) -> StaticApp {

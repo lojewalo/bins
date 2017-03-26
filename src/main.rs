@@ -127,6 +127,14 @@ fn inner() -> i32 {
     cli_options.force = Some(true);
   }
 
+  if matches.is_present("all") {
+    cli_options.all = Some(true);
+  }
+
+  if let Some(range) = matches.value_of("range") {
+    cli_options.range = Some(Vec::new()); // FIXME: parse ranges
+  }
+
   if let Some(name) = matches.value_of("name") {
     cli_options.name = Some(name.to_owned());
   }

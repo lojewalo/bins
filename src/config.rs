@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 pub const DEFAULT_CONFIG_GZIP: &'static [u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/bins.cfg.gz"));
 
 #[derive(Debug, Default, Deserialize)]
@@ -72,7 +74,9 @@ pub struct CommandLineOptions {
   pub force: Option<bool>,
   pub name: Option<String>,
   #[cfg(feature = "clipboard_support")]
-  pub copy: Option<bool>
+  pub copy: Option<bool>,
+  pub all: Option<bool>,
+  pub range: Option<Vec<Range<usize>>>
 }
 
 #[derive(Debug)]
