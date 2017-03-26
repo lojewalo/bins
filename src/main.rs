@@ -36,6 +36,7 @@ mod bins;
 mod config;
 mod logger;
 mod cli;
+mod json;
 
 use config::*;
 
@@ -68,8 +69,20 @@ macro_rules! report_error_using {
   }}
 }
 
-macro_rules! report_error {
+macro_rules! _report_error {
   ($fmt: expr, $e: expr $(, $args: expr),*) => (report_error_using!(error, $fmt, $e $(, $args)*))
+}
+
+macro_rules! report_error {
+  ($json: expr, $fmt: expr, $e: expr $(, $args: expr),*) => {{
+    if $json {
+      let err = json::Error::new($e.to_string(), error_parents(&$e).into_iter().map(|e| e.to_string()).collect());
+      let err_str = serde_json::to_string(&err).unwrap();
+      println!("{}", err_str);
+    } else {
+      _report_error!($fmt, $e $(, $args)*);
+    }
+  }}
 }
 
 include!(concat!(env!("OUT_DIR"), "/version_info.rs"));
@@ -87,8 +100,7 @@ fn inner() -> i32 {
     }
   };
 
-  let matches = cli::create_app(config.defaults.bin.is_some())
-    .get_matches();
+  let matches = cli::create_app(config.defaults.bin.is_some()).get_matches();
 
   let level = if matches.is_present("debug") {
     LogLevel::Debug
@@ -100,12 +112,12 @@ fn inner() -> i32 {
     return 1;
   }
 
-  let mut cli_options = CommandLineOptions::default();
-
   if matches.is_present("version") {
     print_version();
     return 0;
   }
+
+  let mut cli_options = CommandLineOptions::default();
 
   if matches.is_present("public") {
     cli_options.private = Some(false);
@@ -181,7 +193,7 @@ fn inner() -> i32 {
       0
     },
     Err(e) => {
-      report_error!("error: {}", e);
+      report_error!(b.cli_options.json(), "error: {}", e);
       1
     }
   }
@@ -195,13 +207,13 @@ fn copy(bins: &Bins, string: &str) {
     let mut ctx = match ClipboardContext::new() {
       Ok(c) => c,
       Err(e) => {
-        error!("error while opening the clipboard: {}", e);
+        report_error!(bins.cli_options.json(), "error while opening the clipboard: {}", e);
         return;
       }
     };
 
     if let Err(e) = ctx.set_contents(string.to_owned()) {
-      error!("error while copying output to the clipboard: {}", e);
+      report_error!(bins.cli_options.json(), "error while copying output to the clipboard: {}", e);
     }
   }
 }
@@ -393,6 +405,7 @@ impl<'a> Bins<'a> {
     let files = match files {
       Some(f) => f,
       None => {
+        // FIXME: json output
         error!("one or more inputs did not have a file name or did not have a valid utf-8 file name");
         return Err(BinsError::Other);
       }

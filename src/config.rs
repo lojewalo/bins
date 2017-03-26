@@ -79,6 +79,16 @@ pub struct CommandLineOptions {
   pub range: Option<Vec<Range<usize>>>
 }
 
+impl CommandLineOptions {
+  pub fn json(&self) -> bool {
+    if let Some(true) = self.json {
+      true
+    } else {
+      false
+    }
+  }
+}
+
 #[derive(Debug)]
 pub enum UrlOutputMode {
   Html,
