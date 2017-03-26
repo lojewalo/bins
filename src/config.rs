@@ -1,4 +1,4 @@
-pub const DEFAULT_CONFIG_GZIP: &'static [u8] = include_bytes!("../bins.cfg.gz");
+pub const DEFAULT_CONFIG_GZIP: &'static [u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/bins.cfg.gz"));
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
