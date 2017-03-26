@@ -361,21 +361,13 @@ impl<'a> Bins<'a> {
     Ok(())
   }
 
-  fn get_upload_files(&self, inputs: Vec<&str>) -> Result<Vec<UploadFile>> {
-    let files: Option<Vec<(&str, File)>> = inputs.into_iter()
-      .map(|f| File::open(f).map(|x| Path::new(f).file_name().and_then(|f| f.to_str()).map(|of| (of, x))))
-      .collect::<IoResult<_>>()
-      .map_err(BinsError::Io)?;
-    let files = match files {
-      Some(f) => f,
-      None => {
-        error!("one or more inputs did not have a file name or did not have a valid utf-8 file name");
-        return Err(BinsError::Other);
-      }
+  fn check_limit(&self, files: &Vec<(&str, File)>) -> Result<()> {
+    let limit = match self.file_size_limit()? {
+      Some(l) => l,
+      None => return Ok(())
     };
-    let size_limit = self.file_size_limit()?;
-    if let Some(limit) = size_limit {
-      for &(ref name, ref file) in &files {
+
+    for &(ref name, ref file) in files {
         let metadata = file.metadata().map_err(BinsError::Io)?;
         let size = metadata.len();
         if size > limit {
@@ -390,7 +382,22 @@ impl<'a> Bins<'a> {
           }
         }
       }
+    Ok(())
     }
+
+  fn get_upload_files(&self, inputs: Vec<&str>) -> Result<Vec<UploadFile>> {
+    let files: Option<Vec<(&str, File)>> = inputs.into_iter()
+      .map(|f| File::open(f).map(|x| Path::new(f).file_name().and_then(|f| f.to_str()).map(|of| (of, x))))
+      .collect::<IoResult<_>>()
+      .map_err(BinsError::Io)?;
+    let files = match files {
+      Some(f) => f,
+      None => {
+        error!("one or more inputs did not have a file name or did not have a valid utf-8 file name");
+        return Err(BinsError::Other);
+      }
+    };
+    self.check_limit(&files)?;
     let contents: Vec<(&str, String)> = files.into_iter()
       .map(|(n, mut f)| {
         let mut c = String::new();
