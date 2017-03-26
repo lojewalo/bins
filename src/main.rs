@@ -368,22 +368,22 @@ impl<'a> Bins<'a> {
     };
 
     for &(ref name, ref file) in files {
-        let metadata = file.metadata().map_err(BinsError::Io)?;
-        let size = metadata.len();
-        if size > limit {
-          if let Some(true) = self.cli_options.force {
-            warn!("{} is {} bytes, which is over the {} byte limit", name, size, limit);
-          } else {
-            return Err(BinsError::Main(MainError::FileOverSizeLimit {
-              name: name.to_string(),
-              size: size,
-              limit: limit
-            }));
-          }
+      let metadata = file.metadata().map_err(BinsError::Io)?;
+      let size = metadata.len();
+      if size > limit {
+        if let Some(true) = self.cli_options.force {
+          warn!("{} is {} bytes, which is over the {} byte limit", name, size, limit);
+        } else {
+          return Err(BinsError::Main(MainError::FileOverSizeLimit {
+            name: name.to_string(),
+            size: size,
+            limit: limit
+          }));
         }
       }
-    Ok(())
     }
+    Ok(())
+  }
 
   fn get_upload_files(&self, inputs: Vec<&str>) -> Result<Vec<UploadFile>> {
     let files: Option<Vec<(&str, File)>> = inputs.into_iter()
@@ -463,7 +463,6 @@ impl<'a> Bins<'a> {
 
   #[cfg(feature = "file_type_checking")]
   fn check_file_types(&self, files: &[UploadFile]) -> Result<()> {
-
     use magic::{Cookie, flags};
 
     let cookie = Cookie::open(flags::NONE).map_err(BinsError::Magic)?;
@@ -518,15 +517,12 @@ impl<'a> Bins<'a> {
       Ok(j)
     } else {
       let output = match download {
-        Paste::Single(f) => {
-          f.content
-        },
-        Paste::Multiple(fs) => {
+        Paste::Single(f) => f.content,
+        Paste::Multiple(fs) =>
           fs.iter()
             .map(|f| format!("==> {} <==\n\n{}", f.name.name(), f.content))
             .collect::<Vec<_>>()
             .join("\n")
-        }
       };
       Ok(output)
     }
