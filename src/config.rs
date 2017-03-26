@@ -81,10 +81,9 @@ pub struct CommandLineOptions {
 
 impl CommandLineOptions {
   pub fn json(&self) -> bool {
-    if let Some(true) = self.json {
-      true
-    } else {
-      false
+    match self.json {
+      Some(true) => true,
+      _ => false
     }
   }
 }
