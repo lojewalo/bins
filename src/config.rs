@@ -1,4 +1,4 @@
-use std::ops::Range;
+use range::BidirectionalRange;
 
 pub const DEFAULT_CONFIG_GZIP: &'static [u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/bins.cfg.gz"));
 
@@ -75,8 +75,8 @@ pub struct CommandLineOptions {
   pub name: Option<String>,
   #[cfg(feature = "clipboard_support")]
   pub copy: Option<bool>,
-  pub all: Option<bool>,
-  pub range: Option<Vec<Range<usize>>>
+  pub list_all: Option<bool>,
+  pub range: Option<Vec<BidirectionalRange<usize>>>
 }
 
 impl CommandLineOptions {

@@ -43,6 +43,7 @@ use config::*;
 use lib::*;
 use lib::error::*;
 use lib::files::{Paste, UploadFile};
+use lib::range::BidirectionalRange;
 
 use clap::ArgMatches;
 use flate2::read::GzDecoder;
@@ -139,14 +140,19 @@ fn inner() -> i32 {
     cli_options.force = Some(true);
   }
 
-  if matches.is_present("all") {
-    cli_options.all = Some(true);
+  if matches.is_present("list-all") {
+    cli_options.list_all = Some(true);
   }
 
   if let Some(range) = matches.value_of("range") {
-    unimplemented!();
-    // FIXME: parse ranges
-    // cli_options.range = Some(Vec::new());
+    let ranges: Result<Vec<BidirectionalRange<usize>>> = range.split(',').map(|x| BidirectionalRange::<usize>::parse_usize(x)).collect();
+    match ranges {
+      Ok(r) => cli_options.range = Some(r),
+      Err(e) => {
+        report_error!(cli_options.json(), "error parsing range: {}", e);
+        return 1;
+      }
+    }
   }
 
   if let Some(name) = matches.value_of("name") {
@@ -276,6 +282,9 @@ impl<'a> Bins<'a> {
           return self.download(u, if is.len() > 1 { Some(&is[1..]) } else { None }); // FIXME
         }
       }
+    }
+    if self.cli_options.range.is_some() {
+      return Err(BinsError::Main(MainError::RangeWithUpload));
     }
     self.upload(inputs)
   }
@@ -503,6 +512,9 @@ impl<'a> Bins<'a> {
   }
 
   fn download(&self, url: Url, names: Option<&[&str]>) -> Result<String> {
+    if names.is_some() && self.cli_options.range.is_some() {
+      return Err(BinsError::Main(MainError::RangeWithNames));
+    }
     let host = url.host_str().ok_or_else(|| BinsError::Main(MainError::MissingHost))?;
     let (is_html_url, bin) = match self.bins.iter().find(|&(_, b)| b.raw_host() == host) {
       Some(b) => (false, b.1),
@@ -526,7 +538,23 @@ impl<'a> Bins<'a> {
       }?;
       return Ok(urls.into_iter().map(|u| u.url().to_string()).collect::<Vec<_>>().join("\n"));
     }
-    let download = bin.download(&id, names)?;
+    if let Some(true) = self.cli_options.list_all {
+      let urls = bin.create_raw_url(&id)?;
+      return Ok(urls.into_iter()
+        .map(|u| u.name()
+          .map(|p| p.name())
+          .unwrap_or_else(|| String::from("<unknown>")))
+        .collect::<Vec<_>>()
+        .join("\n"));
+    }
+    let download_info = if let Some(ref range) = self.cli_options.range {
+      DownloadInfo::range(range)
+    } else if let Some(ns) = names {
+      DownloadInfo::names(ns)
+    } else {
+      DownloadInfo::empty()
+    };
+    let download = bin.download(&id, &download_info)?;
     if let Some(true) = self.cli_options.json {
       let j = serde_json::to_string(&download).map_err(BinsError::Json)?;
       Ok(j)

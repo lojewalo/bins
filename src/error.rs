@@ -23,6 +23,7 @@ pub enum BinsError {
   Toml(TomlError),
   #[cfg(feature = "file_type_checking")]
   Magic(::magic::MagicError),
+  InvalidRange(Option<::std::num::ParseIntError>),
   Thread(Box<Any + Send + 'static>),
 
   InvalidResponse,
@@ -48,6 +49,8 @@ impl Display for BinsError {
         Some(ref string) => write!(f, "the bin responded with an invalid status ({})\nthe bin also included this content with the error:\n\n{}", code, string),
         None => write!(f, "the bin responded with an invalid status ({})", code)
       },
+      BinsError::InvalidRange(Some(ref e)) => write!(f, "could not parse range: {}", e),
+      BinsError::InvalidRange(None) => write!(f, "range had too many components"),
       BinsError::Main(ref e) => write!(f, "{}", e.to_string()),
       #[cfg(feature = "file_type_checking")]
       BinsError::InvalidFileType { ref name, ref kind } => write!(f, "bins stopped before uploading because {} is a disallowed file type ({})", name, kind),
@@ -66,6 +69,8 @@ impl StdError for BinsError {
       BinsError::Toml(ref e) => e.description(),
       #[cfg(feature = "file_type_checking")]
       BinsError::Magic(ref e) => e.description(),
+      BinsError::InvalidRange(Some(ref e)) => e.description(),
+      BinsError::InvalidRange(None) => "a range was composed in an invalid way",
       BinsError::Thread(_) => "a thread panicked",
       BinsError::InvalidResponse => "the bin responded incorrectly (or updated with a breaking change)",
       BinsError::InvalidStatus(_, _) => "the bin responded with an incorrect status code",
@@ -87,6 +92,7 @@ impl StdError for BinsError {
       BinsError::Toml(ref e) => Some(e),
       #[cfg(feature = "file_type_checking")]
       BinsError::Magic(ref e) => Some(e),
+      BinsError::InvalidRange(Some(ref e)) => Some(e),
       _ => None
     }
   }
@@ -106,7 +112,11 @@ pub enum MainError {
     limit: u64
   },
   MissingHost,
-  NoSuchHost(String)
+  NoSuchHost(String),
+  RangeWithUpload,
+  RangeWithNames,
+  RangeOutOfBounds(usize),
+  FilterTooStrict
 }
 
 impl MainError {
@@ -125,7 +135,11 @@ impl MainError {
         limit,
         if limit == 1 { "" } else { "s" }),
       MainError::MissingHost => String::from("url was missing a host"),
-      MainError::NoSuchHost(ref host) => format!("no bin uses the hostname {}", host)
+      MainError::NoSuchHost(ref host) => format!("no bin uses the hostname {}", host),
+      MainError::RangeWithUpload => String::from("cannot upload with --range"),
+      MainError::RangeWithNames => String::from("cannot specify file names with --range"),
+      MainError::RangeOutOfBounds(af) => format!("range out of bounds: asked for item {af}, but there was no item {af}", af=af),
+      MainError::FilterTooStrict => String::from("filter did not match any files")
     }
   }
 }

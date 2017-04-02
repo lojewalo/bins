@@ -1,3 +1,5 @@
+#![feature(step_trait)]
+
 extern crate url;
 extern crate hyper;
 #[macro_use]
@@ -13,8 +15,10 @@ extern crate magic;
 
 pub mod error;
 pub mod files;
+pub mod range;
 
-use error::BinsError;
+use error::*;
+use range::{BidirectionalRange, AnyContains};
 use files::*;
 
 use hyper::Client;
@@ -23,6 +27,7 @@ use scoped_threadpool::Pool;
 
 use std::io::Read;
 use std::sync::mpsc::channel;
+use std::collections::HashMap;
 
 pub use error::Result;
 
@@ -73,7 +78,7 @@ pub trait UploadsSingleFiles {
 }
 
 pub trait Downloads {
-  fn download(&self, id: &str, names: Option<&[&str]>) -> Result<Paste>;
+  fn download(&self, id: &str, info: &DownloadInfo) -> Result<Paste>;
 }
 
 pub trait HasClient {
@@ -134,10 +139,38 @@ impl<T> Uploads for T
   }
 }
 
+#[derive(Debug, Default)]
+pub struct DownloadInfo {
+  names: Option<Vec<String>>,
+  range: Option<Vec<BidirectionalRange<usize>>>
+}
+
+impl DownloadInfo {
+  pub fn names(names: &[&str]) -> DownloadInfo {
+    let ns = names.iter().map(|x| x.to_string()).collect();
+    DownloadInfo {
+      names: Some(ns),
+      .. DownloadInfo::default()
+    }
+  }
+
+  pub fn range(range: &[BidirectionalRange<usize>]) -> DownloadInfo {
+    DownloadInfo {
+      range: Some(range.to_vec()),
+      .. DownloadInfo::default()
+    }
+  }
+
+  #[inline]
+  pub fn empty() -> DownloadInfo {
+    DownloadInfo::default()
+  }
+}
+
 impl<T> Downloads for T
   where T: CreatesUrls + HasClient + Sync
 {
-  fn download(&self, id: &str, names: Option<&[&str]>) -> Result<Paste> {
+  fn download(&self, id: &str, info: &DownloadInfo) -> Result<Paste> {
     debug!("downloading id {}", id);
     let raw_url_strs = self.create_raw_url(id)?;
     debug!("using raw urls {:?}", raw_url_strs);
@@ -146,13 +179,13 @@ impl<T> Downloads for T
     let channel_size = raw_url_strs.len();
     let mut contents = Vec::with_capacity(channel_size);
     pool.scoped(|scope| {
-      for url in raw_url_strs {
+      for (i, url) in raw_url_strs.into_iter().enumerate() {
         let tx_clone = tx.clone();
         debug!("queuing scoped download thread");
         scope.execute(move || {
-          if let Some(ns) = names {
+          if let Some(ref ns) = info.names {
             if let Some(PasteFileName::Explicit(name)) = url.name() {
-              if !ns.contains(&name.as_str()) {
+              if !ns.contains(&name) {
                 debug!("skipping {}", name);
                 if let Err(e) = tx_clone.send(Ok(None)) {
                   error!("could not send result over channel: {}", e);
@@ -160,10 +193,18 @@ impl<T> Downloads for T
                 return;
               }
             }
+          } else if let Some(ref range) = info.range {
+            if !range.any_contains(i + 1) {
+              debug!("skipping url {}", i);
+              if let Err(e) = tx_clone.send(Ok(None)) {
+                error!("could not send result over channel: {}", e);
+              }
+              return;
+            }
           }
           if let PasteUrl::Downloaded(u, f) = url {
             debug!("already downloaded {}", u);
-            if let Err(e) = tx_clone.send(Ok(Some(f))) {
+            if let Err(e) = tx_clone.send(Ok(Some((i, f)))) {
               error!("could not send result over channel: {}", e);
             }
             return;
@@ -195,9 +236,11 @@ impl<T> Downloads for T
               }
               return;
             }
-            let tx_res = tx_clone.send(Ok(Some(DownloadedFile::new(
+            let downloaded_file = DownloadedFile::new(
               url.name().unwrap_or_else(|| PasteFileName::Guessed(id.to_owned())),
-              content))));
+              content
+            );
+            let tx_res = tx_clone.send(Ok(Some((i, downloaded_file))));
             if let Err(e) = tx_res {
               error!("could not send result over channel: {}", e);
             }
@@ -207,17 +250,45 @@ impl<T> Downloads for T
       debug!("joining on all threads");
       scope.join_all();
       debug!("done joining");
+      let mut map = HashMap::new();
       for result in rx.into_iter().take(channel_size) {
         let option = result?;
-        if let Some(f) = option {
-          contents.push(f);
+        if let Some((i, f)) = option {
+          map.insert(i, f);
         }
       }
       debug!("sorting downloads");
-      contents.sort_by_key(|f| f.name.name());
+      if let Some(ref range) = info.range {
+        let order: Vec<usize> = range.iter().flat_map(|r| r.clone().collect::<Vec<_>>()).collect();
+        for i in order {
+          if i <= 0 {
+            // block against subtracting 1 from 0 on a usize
+            return Err(BinsError::Main(MainError::RangeOutOfBounds(i)));
+          }
+          let item = match map.remove(&(i - 1)) {
+            Some(x) => x,
+            None => return Err(BinsError::Main(MainError::RangeOutOfBounds(i)))
+          };
+          contents.push(item);
+        }
+      } else {
+        let keys: Vec<usize> = map.keys().map(|x| x.clone()).collect();
+        for key in keys {
+          let file = match map.remove(&key) {
+            Some(x) => x,
+            None => return Err(BinsError::Other)
+          };
+          contents.push(file);
+        }
+        contents.sort_by_key(|f| f.name.name());
+      }
       Ok(())
     })?;
     debug!("contents downloaded: {:?}", contents);
+    if contents.is_empty() {
+      debug!("no files downloaded. displaying filter error");
+      return Err(BinsError::Main(MainError::FilterTooStrict));
+    }
     let res = if contents.len() == 1 {
       debug!("only one file downloaded");
       let content = &contents[0];
