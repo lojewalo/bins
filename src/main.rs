@@ -64,7 +64,7 @@ use url::Url;
 macro_rules! report_error_using {
   ($using: ident, $fmt: expr, $e: expr $(, $args: expr),*) => {{
     $using!($fmt, $e, $($args)*);
-    for error in error_parents(&$e) {
+    for error in error_parents($e) {
       $using!("{}", error);
     }
   }}
@@ -77,7 +77,7 @@ macro_rules! _report_error {
 macro_rules! report_error {
   ($json: expr, $fmt: expr, $e: expr $(, $args: expr),*) => {{
     if $json {
-      let err = json::Error::new($e.to_string(), error_parents(&$e).into_iter().map(|e| e.to_string()).collect());
+      let err = json::Error::new($e.to_string(), error_parents($e).into_iter().map(|e| e.to_string()).collect());
       let err_str = serde_json::to_string(&err).unwrap();
       println!("{}", err_str);
     } else {
@@ -96,7 +96,7 @@ fn inner() -> i32 {
   let config = match get_config() {
     Ok(c) => c,
     Err(e) => {
-      report_error_using!(println, "could not create or load bins config file: {}", e);
+      report_error_using!(println, "could not create or load bins config file: {}", &e);
       return 1;
     }
   };
@@ -109,7 +109,7 @@ fn inner() -> i32 {
     LogLevel::Info
   };
   if let Err(e) = logger::Logger::new(level).init() {
-    report_error_using!(println, "could not initialize logger: {}", e);
+    report_error_using!(println, "could not initialize logger: {}", &e);
     return 1;
   }
 
@@ -149,7 +149,7 @@ fn inner() -> i32 {
     match ranges {
       Ok(r) => cli_options.range = Some(r),
       Err(e) => {
-        report_error!(cli_options.json(), "error parsing range: {}", e);
+        report_error!(cli_options.json(), "error parsing range: {}", &e);
         return 1;
       }
     }
@@ -201,7 +201,7 @@ fn inner() -> i32 {
       0
     },
     Err(e) => {
-      report_error!(b.cli_options.json(), "error: {}", e);
+      report_error!(b.cli_options.json(), "error: {}", &e);
       1
     }
   }
@@ -215,13 +215,13 @@ fn copy(bins: &Bins, string: &str) {
     let mut ctx = match ClipboardContext::new() {
       Ok(c) => c,
       Err(e) => {
-        report_error!(bins.cli_options.json(), "error while opening the clipboard: {}", e);
+        report_error!(bins.cli_options.json(), "error while opening the clipboard: {}", &*e);
         return;
       }
     };
 
     if let Err(e) = ctx.set_contents(string.to_owned()) {
-      report_error!(bins.cli_options.json(), "error while copying output to the clipboard: {}", e);
+      report_error!(bins.cli_options.json(), "error while copying output to the clipboard: {}", &*e);
     }
   }
 }
