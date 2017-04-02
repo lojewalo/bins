@@ -34,6 +34,9 @@ A new config section has been added: `safety`. Some options have been moved here
 Input mode has been renamed and its option has been removed. If the first positional argument to the program is a valid
 URL, bins switches to download mode. Specifying file names after filters the files downloaded.
 
+In download mode, --range can be used like in 1.0.0 (it still sorts output based on the range passed). bins will
+download and display all files by default. To get the old behavior of listing files, use -L (--list-all).
+
 ### Threading
 
 Uploads and downloads are now threaded. When uploading to a bin that does not support multiple files, the files are
