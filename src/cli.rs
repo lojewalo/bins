@@ -25,7 +25,7 @@ fn base_app(has_default_bin: bool) -> StaticApp {
       .required(!has_default_bin)
       .takes_value(true)
       .value_name("bin")
-      .possible_values(&["hastebin", "sprunge", "gist"]))
+      .possible_values(&["hastebin", "sprunge", "gist", "pastebin"]))
     .arg(Arg::with_name("public")
       .long("public")
       .short("P")

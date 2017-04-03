@@ -38,6 +38,7 @@ pub enum BinsError {
     kind: String
   },
   Config,
+  Custom(String),
   Other
 }
 
@@ -54,6 +55,7 @@ impl Display for BinsError {
       BinsError::Main(ref e) => write!(f, "{}", e.to_string()),
       #[cfg(feature = "file_type_checking")]
       BinsError::InvalidFileType { ref name, ref kind } => write!(f, "bins stopped before uploading because {} is a disallowed file type ({})", name, kind),
+      BinsError::Custom(ref s) => write!(f, "{}", s),
       _ => write!(f, "{}", self.description())
     }
   }
@@ -79,6 +81,7 @@ impl StdError for BinsError {
       #[cfg(feature = "file_type_checking")]
       BinsError::InvalidFileType { .. } => "an invalid file type was used as an input",
       BinsError::Config => "bins could not find a configuration file, and it was impossible to create one",
+      BinsError::Custom(_) => "custom error",
       BinsError::Other => "an error occurred. please let us know so we can provide a better error message"
     }
   }
