@@ -18,6 +18,8 @@ extern crate time;
 extern crate magic;
 #[cfg(feature = "clipboard_support")]
 extern crate clipboard;
+extern crate rand;
+extern crate base64;
 
 macro_rules! option {
   ($e: expr) => {{
@@ -31,6 +33,7 @@ macro_rules! option {
 // TODO: refactor Bins::download
 // TODO: move loose functions into Bins
 // TODO: refactor inner
+// TODO: investigate -v vs --version
 
 mod bins;
 mod config;
@@ -181,7 +184,9 @@ fn inner() -> i32 {
     let bins: Vec<Box<Bin>> = vec![
       box bins::Sprunge::new(),
       box bins::Hastebin::new(),
+      box bins::Fedora::new(),
       box bins::Gist::new(config.clone(), cli_options.clone()),
+      box bins::Bitbucket::new(config.clone(), cli_options.clone()),
       box bins::Pastebin::new(config.clone(), cli_options.clone())
     ];
     bins.into_iter().map(|b| (b.name().to_owned(), b)).collect()
