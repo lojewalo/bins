@@ -27,17 +27,25 @@ fn completions() {
   app.gen_completions("bins", Shell::Fish, &outdir);
 }
 
+fn git_describe() -> Option<String> {
+  let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+  let repo = match Repository::open(&manifest_dir) {
+    Err(_) => return None,
+    Ok(r) => r
+  };
+  let description = match repo.describe(DescribeOptions::new().describe_tags().show_commit_oid_as_fallback(true)) {
+    Err(_) => return None,
+    Ok(d) => d
+  };
+  match description.format(Some(DescribeFormatOptions::new().dirty_suffix("-dirty"))) {
+    Err(_) => None,
+    Ok(fd) => Some(fd)
+  }
+}
+
 fn get_version<'a>() -> (String, Option<String>, String) {
   let profile = env::var("PROFILE").unwrap();
-  let manifest_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-  let git = if let Ok(repo) = Repository::open(&manifest_dir) {
-    Some(repo.describe(DescribeOptions::new().describe_tags().show_commit_oid_as_fallback(true))
-      .unwrap()
-      .format(Some(DescribeFormatOptions::new().dirty_suffix("-dirty")))
-      .unwrap())
-  } else {
-    None
-  };
+  let git = git_describe();
   let date = format!("{}", time::now().strftime("%b %d, %Y %H:%M:%S %z").unwrap());
   (profile, git, date)
 }
@@ -60,11 +68,11 @@ fn main() {
 
       impl VersionInfo {{
         fn get() -> VersionInfo {{
-            VersionInfo {{
-              profile: \"{}\",
-              git: {},
-              date: \"{}\"
-            }}
+          VersionInfo {{
+            profile: \"{}\",
+            git: {},
+            date: \"{}\"
+          }}
         }}
       }}
   ",
