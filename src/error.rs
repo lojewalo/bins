@@ -132,16 +132,16 @@ impl MainError {
       MainError::NameWithMultipleFiles => String::from("cannot use --name with multiple upload files"),
       MainError::InvalidSizeLimit => String::from("the file size limit specified in the config is invalid"),
       MainError::FileOverSizeLimit { ref name, size, limit } => format!("{} is {} byte{}, which is over the size limit of {} byte{}",
-        name,
-        size,
-        if size == 1 { "" } else { "s" },
-        limit,
-        if limit == 1 { "" } else { "s" }),
+                                                                        name,
+                                                                        size,
+                                                                        if size == 1 { "" } else { "s" },
+                                                                        limit,
+                                                                        if limit == 1 { "" } else { "s" }),
       MainError::MissingHost => String::from("url was missing a host"),
       MainError::NoSuchHost(ref host) => format!("no bin uses the hostname {}", host),
       MainError::RangeWithUpload => String::from("cannot upload with --range"),
       MainError::RangeWithNames => String::from("cannot specify file names with --range"),
-      MainError::RangeOutOfBounds(af) => format!("range out of bounds: asked for item {af}, but there was no item {af}", af=af),
+      MainError::RangeOutOfBounds(af) => format!("range out of bounds: asked for item {af}, but there was no item {af}", af = af),
       MainError::FilterTooStrict => String::from("filter did not match any files")
     }
   }

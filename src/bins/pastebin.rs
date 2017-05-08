@@ -127,9 +127,9 @@ impl HasFeatures for Pastebin {
   fn features(&self) -> Vec<BinFeature> {
     // TODO: use pastebin's crappy login system to allow authed pastes
     vec![BinFeature::Public,
-      BinFeature::Private,
-      BinFeature::Anonymous,
-      BinFeature::SingleNaming]
+         BinFeature::Private,
+         BinFeature::Anonymous,
+         BinFeature::SingleNaming]
   }
 }
 

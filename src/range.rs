@@ -51,8 +51,8 @@ impl<Idx> BidirectionalRange<Idx>
 }
 
 impl<A: Step + Clone> Iterator for BidirectionalRange<A>
-  where for<'a> &'a A: Add<&'a A, Output = A>,
-  for<'a> &'a A: Sub<&'a A, Output = A>
+  where for<'a> &'a A: Add<&'a A, Output=A>,
+        for<'a> &'a A: Sub<&'a A, Output=A>
 {
   type Item = A;
 

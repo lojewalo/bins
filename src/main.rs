@@ -260,12 +260,12 @@ fn print_version() {
     None => String::new()
   };
   println!("{} {}\n\ncompiled: {}\nprofile: {}{}{}",
-    name,
-    version,
-    version_info.date,
-    version_info.profile,
-    git_string,
-    feature_info);
+           name,
+           version,
+           version_info.date,
+           version_info.profile,
+           git_string,
+           feature_info);
 }
 
 struct Bins<'a> {

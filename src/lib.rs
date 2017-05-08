@@ -150,14 +150,14 @@ impl DownloadInfo {
     let ns = names.iter().map(|x| x.to_string()).collect();
     DownloadInfo {
       names: Some(ns),
-      .. DownloadInfo::default()
+      ..DownloadInfo::default()
     }
   }
 
   pub fn range(range: &[BidirectionalRange<usize>]) -> DownloadInfo {
     DownloadInfo {
       range: Some(range.to_vec()),
-      .. DownloadInfo::default()
+      ..DownloadInfo::default()
     }
   }
 

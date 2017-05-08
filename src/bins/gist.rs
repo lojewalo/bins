@@ -108,11 +108,11 @@ impl CreatesHtmlUrls for Gist {
       .map(|(name, _)| PasteUrl::html(
         Some(PasteFileName::Explicit(name.clone())),
         format!("https://gist.github.com/{}/#file-{}",
-          id,
-          name.chars()
-            .map(|c| c.to_lowercase().collect::<String>())
-            .map(|c| if GOOD_CHARS.contains(&c) { c } else { "-".to_owned() })
-            .collect::<String>())))
+                id,
+                name.chars()
+                  .map(|c| c.to_lowercase().collect::<String>())
+                  .map(|c| if GOOD_CHARS.contains(&c) { c } else { "-".to_owned() })
+                  .collect::<String>())))
       .collect();
     Ok(urls)
   }
@@ -151,11 +151,11 @@ impl CreatesRawUrls for Gist {
 impl HasFeatures for Gist {
   fn features(&self) -> Vec<BinFeature> {
     vec![BinFeature::Public,
-      BinFeature::Private,
-      BinFeature::Authed,
-      BinFeature::Anonymous,
-      BinFeature::MultiFile,
-      BinFeature::SingleNaming]
+         BinFeature::Private,
+         BinFeature::Authed,
+         BinFeature::Anonymous,
+         BinFeature::MultiFile,
+         BinFeature::SingleNaming]
   }
 }
 

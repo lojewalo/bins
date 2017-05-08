@@ -136,8 +136,8 @@ impl CreatesRawUrls for Fedora {
 impl HasFeatures for Fedora {
   fn features(&self) -> Vec<BinFeature> {
     vec![BinFeature::Public,
-      BinFeature::Anonymous,
-      BinFeature::SingleNaming]
+         BinFeature::Anonymous,
+         BinFeature::SingleNaming]
   }
 }
 

@@ -196,10 +196,10 @@ impl CreatesRawUrls for Bitbucket {
 impl HasFeatures for Bitbucket {
   fn features(&self) -> Vec<BinFeature> {
     vec![BinFeature::Public,
-      BinFeature::Private,
-      BinFeature::Authed,
-      BinFeature::MultiFile,
-      BinFeature::SingleNaming]
+         BinFeature::Private,
+         BinFeature::Authed,
+         BinFeature::MultiFile,
+         BinFeature::SingleNaming]
   }
 }
 
