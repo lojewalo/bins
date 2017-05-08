@@ -195,7 +195,7 @@ impl HasClient for Gist {
 struct RemoteGistPaste {
   id: String,
   files: BTreeMap<String, RemoteGistFile>,
-  description: String,
+  description: Option<String>,
   public: bool,
   html_url: Option<String>
 }
