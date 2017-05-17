@@ -27,7 +27,7 @@ impl Log for Logger {
   }
 
   fn log(&self, record: &LogRecord) {
-    if self.enabled(record.metadata()) {
+    if self.enabled(record.metadata()) && !record.target().contains("rustls") {
       let time_now = now();
       let time = time_now.strftime("%H:%M:%S").unwrap();
       writeln!(stderr(), "[{}] {} – {}", time, record.level(), record.args()).unwrap();
