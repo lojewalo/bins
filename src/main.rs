@@ -2,7 +2,10 @@
 
 extern crate bins as lib;
 extern crate hyper;
+#[cfg(feature = "openssl")]
 extern crate hyper_openssl;
+#[cfg(feature = "rustls")]
+extern crate hyper_rustls;
 extern crate url;
 #[macro_use]
 extern crate serde_derive;
@@ -50,6 +53,8 @@ use lib::range::BidirectionalRange;
 
 use clap::ArgMatches;
 use flate2::read::GzDecoder;
+use hyper::Client;
+use hyper::net::HttpsConnector;
 
 use std::path::{Path, PathBuf};
 use std::fs::{File, OpenOptions};
@@ -234,6 +239,12 @@ fn copy(bins: &Bins, string: &str) {
 
 fn get_feature_info() -> Option<String> {
   let mut features = Vec::new();
+  if cfg!(feature = "openssl") {
+    features.push("openssl");
+  }
+  if cfg!(feature = "rustls") {
+    features.push("rustls");
+  }
   if cfg!(feature = "file_type_checking") {
     features.push("file_type_checking");
   }
@@ -688,4 +699,16 @@ fn find_config_path() -> Option<PathBuf> {
     }
   }
   None
+}
+
+#[cfg(feature = "openssl")]
+pub fn new_client() -> Client {
+  use hyper_openssl::OpensslClient;
+  Client::with_connector(HttpsConnector::new(OpensslClient::new().unwrap()))
+}
+
+#[cfg(feature = "rustls")]
+pub fn new_client() -> Client {
+  use hyper_rustls::TlsClient;
+  Client::with_connector(HttpsConnector::new(TlsClient::new()))
 }

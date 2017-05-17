@@ -1,8 +1,6 @@
 use url::Url;
 use url::form_urlencoded;
 use hyper::Client;
-use hyper::net::HttpsConnector;
-use hyper_openssl::OpensslClient;
 use hyper::header::ContentType;
 use serde_json;
 
@@ -23,13 +21,10 @@ pub struct Pastebin {
 
 impl Pastebin {
   pub fn new(config: Arc<Config>, cli: Arc<CommandLineOptions>) -> Pastebin {
-    let ssl = OpensslClient::new().unwrap();
-    let connector = HttpsConnector::new(ssl);
-    let client = Client::with_connector(connector);
     Pastebin {
       config: config,
       cli: cli,
-      client: client
+      client: ::new_client()
     }
   }
 

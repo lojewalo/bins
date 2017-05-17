@@ -1,7 +1,5 @@
 use url::Url;
 use hyper::Client;
-use hyper::net::HttpsConnector;
-use hyper_openssl::OpensslClient;
 use hyper::header::{Authorization, Basic, ContentType, Headers, UserAgent};
 use hyper::mime::{Attr, Mime, SubLevel, TopLevel, Value};
 use hyper::status::StatusCode;
@@ -27,13 +25,10 @@ pub struct Bitbucket {
 
 impl Bitbucket {
   pub fn new(config: Arc<Config>, cli: Arc<CommandLineOptions>) -> Bitbucket {
-    let ssl = OpensslClient::new().unwrap();
-    let connector = HttpsConnector::new(ssl);
-    let client = Client::with_connector(connector);
     Bitbucket {
       config: config,
       cli: cli,
-      client: client
+      client: ::new_client()
     }
   }
 

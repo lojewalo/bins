@@ -10,15 +10,18 @@ license = "MPL-2.0"
 build = "build.rs"
 
 [features]
-default = ["file_type_checking"]
+default = ["file_type_checking", "openssl"]
 file_type_checking = ["magic"]
 clipboard_support = ["clipboard"]
+openssl = ["hyper-openssl"]
+rustls = ["hyper-rustls"]
 
 [dependencies]
 toml = "0.4"
 clap = "2.23"
 hyper = "0.10"
-hyper-openssl = "0.2"
+hyper-openssl = { version = "0.2", optional = true }
+hyper-rustls = { version = "0.6", optional = true }
 rand = "0.3"
 base64 = "0.5"
 serde = "1.0"

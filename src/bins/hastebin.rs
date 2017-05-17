@@ -1,7 +1,5 @@
 use url::Url;
 use hyper::Client;
-use hyper::net::HttpsConnector;
-use hyper_openssl::OpensslClient;
 use serde_json;
 use serde_json::Result as JsonResult;
 
@@ -12,17 +10,16 @@ use lib::files::*;
 
 use std::io::Read;
 
+// TODO: custom servers
+
 pub struct Hastebin {
   client: Client
 }
 
 impl Hastebin {
   pub fn new() -> Hastebin {
-    let ssl = OpensslClient::new().unwrap();
-    let connector = HttpsConnector::new(ssl);
-    let client = Client::with_connector(connector);
     Hastebin {
-      client: client
+      client: ::new_client()
     }
   }
 

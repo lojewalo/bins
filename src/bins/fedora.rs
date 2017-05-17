@@ -1,7 +1,5 @@
 use url::Url;
 use hyper::Client;
-use hyper::net::HttpsConnector;
-use hyper_openssl::OpensslClient;
 use serde_json;
 
 use lib::*;
@@ -17,11 +15,8 @@ pub struct Fedora {
 
 impl Fedora {
   pub fn new() -> Fedora {
-    let ssl = OpensslClient::new().unwrap();
-    let connector = HttpsConnector::new(ssl);
-    let client = Client::with_connector(connector);
     Fedora {
-      client: client
+      client: ::new_client()
     }
   }
 

@@ -1,7 +1,5 @@
 use url::Url;
 use hyper::Client;
-use hyper::net::HttpsConnector;
-use hyper_openssl::OpensslClient;
 use hyper::client::RequestBuilder;
 use hyper::header::{Headers, ContentType, UserAgent, Authorization, Basic};
 use serde_json;
@@ -26,13 +24,10 @@ pub struct Gist {
 
 impl Gist {
   pub fn new(config: Arc<Config>, cli: Arc<CommandLineOptions>) -> Gist {
-    let ssl = OpensslClient::new().unwrap();
-    let connector = HttpsConnector::new(ssl);
-    let client = Client::with_connector(connector);
     Gist {
       config: config,
       cli: cli,
-      client: client
+      client: ::new_client()
     }
   }
 
