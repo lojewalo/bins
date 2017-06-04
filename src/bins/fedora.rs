@@ -138,7 +138,7 @@ impl HasFeatures for Fedora {
 
 impl UploadsSingleFiles for Fedora {
   fn upload_single(&self, file: &UploadFile) -> Result<PasteUrl> {
-    debug!(target: "fedora", "uploading single file");
+    debug!("uploading single file");
     let params = FedoraParams {
       contents: file.content.clone(),
       title: file.name.clone()
@@ -149,21 +149,21 @@ impl UploadsSingleFiles for Fedora {
       .body(&params_json)
       .send()
       .map_err(BinsError::Http)?;
-    debug!(target: "fedora", "res: {:?}", res);
+    debug!("res: {:?}", res);
     let mut content = String::new();
     res.read_to_string(&mut content).map_err(BinsError::Io)?;
-    debug!(target: "fedora", "content: {}", content);
+    debug!("content: {}", content);
     if res.status.class().default_code() != ::hyper::Ok {
-      debug!(target: "fedora", "bad status code");
+      debug!("bad status code");
       return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
     }
     let response: FedoraResponse = serde_json::from_str(&content).map_err(BinsError::Json)?;
-    debug!(target: "fedora", "parse: {:?}", response);
+    debug!("parse: {:?}", response);
     if let Some(false) = response.success {
-      debug!(target: "fedora", "upload was a failure");
+      debug!("upload was a failure");
       return Err(BinsError::BinError(response.message.unwrap_or_else(|| String::from("<no error given>"))));
     } else {
-      debug!(target: "fedora", "upload was a success. creating html url");
+      debug!("upload was a success. creating html url");
       let url = response.url;
       return Ok(PasteUrl::html(Some(PasteFileName::Explicit(file.name.clone())), url));
     }

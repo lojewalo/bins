@@ -139,25 +139,25 @@ impl HasFeatures for Hastebin {
 
 impl UploadsSingleFiles for Hastebin {
   fn upload_single(&self, file: &UploadFile) -> Result<PasteUrl> {
-    debug!(target: "hastebin", "uploading single file");
+    debug!("uploading single file");
     let mut res = self.client.post("https://hastebin.com/documents")
       .body(&file.content)
       .send()
       .map_err(BinsError::Http)?;
-    debug!(target: "hastebin", "res: {:?}", res);
+    debug!("res: {:?}", res);
     let mut content = String::new();
     res.read_to_string(&mut content).map_err(BinsError::Io)?;
-    debug!(target: "hastebin", "content: {}", content);
+    debug!("content: {}", content);
     let success: JsonResult<HastebinSuccess> = serde_json::from_str(&content);
-    debug!(target: "hastebin", "success parse: {:?}", success);
+    debug!("success parse: {:?}", success);
     if let Ok(success) = success {
-      debug!(target: "hastebin", "upload was a success. creating html url");
+      debug!("upload was a success. creating html url");
       let url = self.format_html_url(&success.key).unwrap();
       return Ok(PasteUrl::html(Some(PasteFileName::Explicit(file.name.clone())), url));
     }
-    debug!(target: "hastebin", "parse was a failure, try to parse as error");
+    debug!("parse was a failure, try to parse as error");
     let error: JsonResult<HastebinError> = serde_json::from_str(&content);
-    debug!(target: "hastebin", "error parse: {:?}", error);
+    debug!("error parse: {:?}", error);
     if let Ok(e) = error {
       return Err(BinsError::BinError(e.message));
     }

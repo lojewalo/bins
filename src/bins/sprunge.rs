@@ -117,17 +117,17 @@ impl HasFeatures for Sprunge {
 
 impl UploadsSingleFiles for Sprunge {
   fn upload_single(&self, contents: &UploadFile) -> Result<PasteUrl> {
-    debug!(target: "sprunge", "uploading single file");
+    debug!("uploading single file");
     let mut res = self.client.post("http://sprunge.us")
       .body(&form_urlencoded::Serializer::new(String::new())
         .append_pair("sprunge", &contents.content)
         .finish())
       .send()
       .map_err(BinsError::Http)?;
-    debug!(target: "sprunge", "response: {:?}", res);
+    debug!("response: {:?}", res);
     let mut content = String::new();
     res.read_to_string(&mut content).map_err(BinsError::Io)?;
-    debug!(target: "sprunge", "content: {}", content);
+    debug!("content: {}", content);
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));

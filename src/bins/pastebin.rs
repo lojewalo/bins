@@ -130,7 +130,7 @@ impl HasFeatures for Pastebin {
 
 impl UploadsSingleFiles for Pastebin {
   fn upload_single(&self, contents: &UploadFile) -> Result<PasteUrl> {
-    debug!(target: "pastebin", "uploading single file");
+    debug!("uploading single file");
     let api_key = match self.config.pastebin.api_key {
       Some(ref key) if !key.is_empty() => key,
       _ => return Err(BinsError::Custom(String::from("no pastebin api key set")))
@@ -146,10 +146,10 @@ impl UploadsSingleFiles for Pastebin {
       .header(ContentType::form_url_encoded())
       .send()
       .map_err(BinsError::Http)?;
-    debug!(target: "pastebin", "response: {:?}", res);
+    debug!("response: {:?}", res);
     let mut content = String::new();
     res.read_to_string(&mut content).map_err(BinsError::Io)?;
-    debug!(target: "pastebin", "content: {}", content);
+    debug!("content: {}", content);
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
