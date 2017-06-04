@@ -351,7 +351,7 @@ impl<'a> Bins<'a> {
       let names: Vec<&String> = self.bins.keys().collect();
       serde_json::to_string(&names).map_err(BinsError::Json)
     } else {
-      Ok(self.bins.keys().map(|s| s.clone()).collect::<Vec<_>>().join("\n"))
+      Ok(self.bins.keys().cloned().collect::<Vec<_>>().join("\n"))
     }
   }
 
@@ -401,13 +401,13 @@ impl<'a> Bins<'a> {
     Ok(())
   }
 
-  fn check_limit(&self, files: &Vec<(&str, File)>) -> Result<()> {
+  fn check_limit(&self, files: &[(&str, File)]) -> Result<()> {
     let limit = match self.file_size_limit()? {
       Some(l) => l,
       None => return Ok(())
     };
 
-    for &(ref name, ref file) in files {
+    for &(name, ref file) in files {
       let metadata = file.metadata().map_err(BinsError::Io)?;
       let size = metadata.len();
       if size > limit {

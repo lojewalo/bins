@@ -62,14 +62,8 @@ impl<A: Step + Clone> Iterator for BidirectionalRange<A>
     }
     let current = match self.current.take() {
       Some(c) => {
-        if self.start < self.end {
-          if c.add_one() == self.end {
-            return None;
-          }
-        } else {
-          if c.sub_one() == self.end {
-            return None;
-          }
+        if (self.start < self.end && c.add_one() == self.end) || c.sub_one() == self.end {
+          return None;
         }
         c
       },
@@ -83,7 +77,7 @@ impl<A: Step + Clone> Iterator for BidirectionalRange<A>
     } else {
       self.current = Some(current.sub_one());
     }
-    return self.current.clone();
+    self.current.clone()
   }
 }
 

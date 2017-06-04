@@ -261,7 +261,7 @@ impl<T> Downloads for T
       if let Some(ref range) = info.range {
         let order: Vec<usize> = range.iter().flat_map(|r| r.clone().collect::<Vec<_>>()).collect();
         for i in order {
-          if i <= 0 {
+          if i == 0 {
             // block against subtracting 1 from 0 on a usize
             return Err(BinsError::Main(MainError::RangeOutOfBounds(i)));
           }
@@ -272,7 +272,7 @@ impl<T> Downloads for T
           contents.push(item);
         }
       } else {
-        let keys: Vec<usize> = map.keys().map(|x| x.clone()).collect();
+        let keys: Vec<usize> = map.keys().cloned().collect();
         for key in keys {
           let file = match map.remove(&key) {
             Some(x) => x,

@@ -204,7 +204,7 @@ impl Uploads for Bitbucket {
 
     let boundary = self.random_boundary();
     let headers = self.prepare_headers(&boundary, authorization);
-    let body = self.prepare_body(&contents, &boundary)?;
+    let body = self.prepare_body(contents, &boundary)?;
 
     let mut response = self.client.post("https://api.bitbucket.org/2.0/snippets")
       .headers(headers)
