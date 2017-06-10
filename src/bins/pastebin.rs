@@ -88,9 +88,9 @@ impl CreatesHtmlUrls for Pastebin {
 impl CreatesRawUrls for Pastebin {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let url = self._format_raw_url(id);
-    let mut res = self.client.get(&url).send().map_err(ErrorKind::Http)?;
+    let mut res = self.client.get(&url).send()?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
@@ -144,11 +144,10 @@ impl UploadsSingleFiles for Pastebin {
         .append_pair("api_dev_key", api_key)
         .finish())
       .header(ContentType::form_url_encoded())
-      .send()
-      .map_err(ErrorKind::Http)?;
+      .send()?;
     debug!("response: {:?}", res);
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     debug!("content: {}", content);
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");

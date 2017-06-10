@@ -64,9 +64,9 @@ impl CreatesHtmlUrls for Fedora {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let html_url = self.format_html_url(id).unwrap();
     let raw_url = self.format_raw_url(id).unwrap();
-    let mut res = self.client.get(&raw_url).send().map_err(ErrorKind::Http)?;
+    let mut res = self.client.get(&raw_url).send()?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
@@ -98,9 +98,9 @@ impl CreatesRawUrls for Fedora {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     debug!("creating raw url for {}", id);
     let raw_url = self.format_raw_url(id).unwrap();
-    let mut res = self.client.get(&raw_url).send().map_err(ErrorKind::Http)?;
+    let mut res = self.client.get(&raw_url).send()?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
@@ -143,21 +143,20 @@ impl UploadsSingleFiles for Fedora {
       contents: file.content.clone(),
       title: file.name.clone()
     };
-    let params_json = serde_json::to_string(&params).map_err(ErrorKind::Json)?;
+    let params_json = serde_json::to_string(&params)?;
     let mut res = self.client.post("https://paste.fedoraproject.org/api/paste/submit")
       .header(::hyper::header::ContentType::json())
       .body(&params_json)
-      .send()
-      .map_err(ErrorKind::Http)?;
+      .send()?;
     debug!("res: {:?}", res);
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     debug!("content: {}", content);
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
     }
-    let response: FedoraResponse = serde_json::from_str(&content).map_err(ErrorKind::Json)?;
+    let response: FedoraResponse = serde_json::from_str(&content)?;
     debug!("parse: {:?}", response);
     if let Some(false) = response.success {
       debug!("upload was a failure");

@@ -53,9 +53,9 @@ impl Gist {
   fn get_gist(&self, id: &str) -> Result<RemoteGistPaste> {
     debug!("getting gist for ID {}", id);
     let builder = self.client.get(&format!("https://api.github.com/gists/{}", id));
-    let mut res = self.add_headers(builder).send().map_err(ErrorKind::Http)?;
+    let mut res = self.add_headers(builder).send()?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
@@ -164,15 +164,15 @@ impl Uploads for Gist {
       public: self.cli.private.or(self.config.defaults.private).map(|x| !x).unwrap_or(false),
       files: files
     };
-    let upload_json = serde_json::to_string(&upload_file).map_err(ErrorKind::Json)?;
+    let upload_json = serde_json::to_string(&upload_file)?;
     let builder = self.client.post("https://api.github.com/gists").body(&upload_json);
-    let mut res = self.add_headers(builder).send().map_err(ErrorKind::Http)?;
+    let mut res = self.add_headers(builder).send()?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     if res.status != ::hyper::status::StatusCode::Created {
       return Err(ErrorKind::BinError(content).into());
     }
-    let paste: RemoteGistPaste = serde_json::from_str(&content).map_err(ErrorKind::Json)?;
+    let paste: RemoteGistPaste = serde_json::from_str(&content)?;
     match paste.html_url {
       Some(u) => Ok(vec![PasteUrl::html(None, u)]),
       None => Err(ErrorKind::InvalidResponse.into())

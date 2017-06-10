@@ -79,9 +79,9 @@ impl CreatesHtmlUrls for Sprunge {
 impl CreatesRawUrls for Sprunge {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let url = self.create_url(id);
-    let mut res = self.client.get(&url).send().map_err(ErrorKind::Http)?;
+    let mut res = self.client.get(&url).send()?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
@@ -122,11 +122,10 @@ impl UploadsSingleFiles for Sprunge {
       .body(&form_urlencoded::Serializer::new(String::new())
         .append_pair("sprunge", &contents.content)
         .finish())
-      .send()
-      .map_err(ErrorKind::Http)?;
+      .send()?;
     debug!("response: {:?}", res);
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     debug!("content: {}", content);
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");

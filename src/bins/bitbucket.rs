@@ -34,7 +34,7 @@ impl Bitbucket {
 
   fn get_snippet(&self, id: &str) -> Result<Snippet> {
     let url_str = format!("https://bitbucket.org/snippets/{}", id);
-    let url = Url::parse(&url_str).map_err(ErrorKind::UrlParse)?;
+    let url = Url::parse(&url_str)?;
     let segments: Vec<_> = match url.path_segments() {
       Some(p) => p.collect(),
       None => bail!("could not parse ID from URL")
@@ -45,12 +45,11 @@ impl Bitbucket {
     let username = segments[1];
     let id = segments[2];
 
-    let api_url = Url::parse(&format!("https://api.bitbucket.org/2.0/snippets/{}/{}", username, id)).map_err(ErrorKind::UrlParse)?;
+    let api_url = Url::parse(&format!("https://api.bitbucket.org/2.0/snippets/{}/{}", username, id))?;
     let mut res = self.client.get(api_url)
       .header(UserAgent(format!("bins/{}", crate_version!())))
       .header(self.authorization()?)
-      .send()
-      .map_err(ErrorKind::Http)?;
+      .send()?;
     let mut content = String::new();
     res.read_to_string(&mut content)?;
     serde_json::from_str(&content).chain_err(|| "could not parse bitbucket response")
@@ -90,7 +89,7 @@ impl Bitbucket {
       title: "bins".to_string(),
       is_private: self.cli.private.unwrap_or_default()
     };
-    let properties_json = serde_json::to_string(&properties).map_err(ErrorKind::Json)?;
+    let properties_json = serde_json::to_string(&properties)?;
 
     let mut body = MultipartRelatedBody::new(boundary);
     body.add_json(&properties_json);
@@ -209,16 +208,15 @@ impl Uploads for Bitbucket {
     let mut response = self.client.post("https://api.bitbucket.org/2.0/snippets")
       .headers(headers)
       .body(&body)
-      .send()
-      .map_err(ErrorKind::Http)?;
+      .send()?;
 
     let mut response_body = String::new();
-    response.read_to_string(&mut response_body).map_err(ErrorKind::Io)?;
+    response.read_to_string(&mut response_body)?;
     if response.status != StatusCode::Created {
       return Err(ErrorKind::BinError(response_body).into());
     }
 
-    let snippet: serde_json::Value = serde_json::from_str(&response_body).map_err(ErrorKind::Json)?;
+    let snippet: serde_json::Value = serde_json::from_str(&response_body)?;
     match snippet.pointer("/links/html/href") {
       Some(h) if h.is_string() => Ok(vec![PasteUrl::html(None, h.as_str().unwrap().to_string())]),
       _ => Err(ErrorKind::InvalidResponse.into())

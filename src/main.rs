@@ -409,7 +409,7 @@ impl<'a> Bins<'a> {
     };
 
     for &(name, ref file) in files {
-      let metadata = file.metadata().map_err(ErrorKind::Io)?;
+      let metadata = file.metadata()?;
       let size = metadata.len();
       if size > limit {
         if let Some(true) = self.cli_options.force {
@@ -430,8 +430,7 @@ impl<'a> Bins<'a> {
   fn get_upload_files(&self, inputs: Vec<&str>) -> Result<Vec<UploadFile>> {
     let files: Option<Vec<(&str, File)>> = inputs.into_iter()
       .map(|f| File::open(f).map(|x| Path::new(f).file_name().and_then(|f| f.to_str()).map(|of| (of, x))))
-      .collect::<IoResult<_>>()
-      .map_err(ErrorKind::Io)?;
+      .collect::<IoResult<_>>()?;
     let files = match files {
       Some(f) => f,
       None => {
@@ -446,8 +445,7 @@ impl<'a> Bins<'a> {
         let mut c = String::new();
         f.read_to_string(&mut c).map(|_| (n, c))
       })
-      .collect::<IoResult<_>>()
-      .map_err(ErrorKind::Io)?;
+      .collect::<IoResult<_>>()?;
     Ok(contents.into_iter().map(|(n, c)| UploadFile::new(n.to_owned(), c)).collect())
   }
 
@@ -508,10 +506,10 @@ impl<'a> Bins<'a> {
   fn check_file_types(&self, files: &[UploadFile]) -> Result<()> {
     use magic::{Cookie, flags};
 
-    let cookie = Cookie::open(flags::NONE).map_err(ErrorKind::Magic)?;
-    cookie.load(&[""; 0]).map_err(ErrorKind::Magic)?;
+    let cookie = Cookie::open(flags::NONE)?;
+    cookie.load(&[""; 0])?;
     for upload_file in files {
-      let kind = cookie.buffer(upload_file.content.as_bytes()).map_err(ErrorKind::Magic)?;
+      let kind = cookie.buffer(upload_file.content.as_bytes())?;
       if let Some(ref disallowed) = self.config.safety.disallowed_file_types {
         if disallowed.contains(&kind) {
           return match self.cli_options.force {
@@ -572,7 +570,7 @@ impl<'a> Bins<'a> {
     };
     let download = bin.download(&id, &download_info)?;
     if let Some(true) = self.cli_options.json {
-      let j = serde_json::to_string(&download).map_err(ErrorKind::Json)?;
+      let j = serde_json::to_string(&download)?;
       Ok(j)
     } else {
       let output = match download {
@@ -591,7 +589,7 @@ impl<'a> Bins<'a> {
 fn get_stdin() -> Result<UploadFile> {
   let mut content = String::new();
   let mut stdin = std::io::stdin();
-  stdin.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+  stdin.read_to_string(&mut content)?;
   Ok(UploadFile::new("stdin".to_owned(), content))
 }
 
@@ -612,11 +610,11 @@ fn error_parents(error: &Error) -> Vec<&Error> {
 
 fn get_config() -> Result<Config> {
   let mut f = match find_config_path() {
-    Some(p) => File::open(p).map_err(ErrorKind::Io)?,
+    Some(p) => File::open(p)?,
     None => create_config_file()?
   };
   let mut content = String::new();
-  f.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+  f.read_to_string(&mut content)?;
   toml::from_str(&content).chain_err(|| "could not parse configuration file")
 }
 
@@ -671,12 +669,10 @@ fn create_config_file() -> Result<File> {
     }
   };
   let mut default_config = String::new();
-  GzDecoder::new(config::DEFAULT_CONFIG_GZIP)
-    .map_err(ErrorKind::Io)?
-    .read_to_string(&mut default_config)
-    .map_err(ErrorKind::Io)?;
-  f.write_all(default_config.as_bytes()).map_err(ErrorKind::Io)?;
-  f.seek(SeekFrom::Start(0)).map_err(ErrorKind::Io)?;
+  GzDecoder::new(config::DEFAULT_CONFIG_GZIP)?
+    .read_to_string(&mut default_config)?;
+  f.write_all(default_config.as_bytes())?;
+  f.seek(SeekFrom::Start(0))?;
   Ok(f)
 }
 

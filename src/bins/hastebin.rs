@@ -67,9 +67,9 @@ impl CreatesHtmlUrls for Hastebin {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let html_url = self.format_html_url(id).unwrap();
     let raw_url = self.format_raw_url(id).unwrap();
-    let mut res = self.client.get(&raw_url).send().map_err(ErrorKind::Http)?;
+    let mut res = self.client.get(&raw_url).send()?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
@@ -101,9 +101,9 @@ impl CreatesRawUrls for Hastebin {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     debug!("creating raw url for {}", id);
     let raw_url = self.format_raw_url(id).unwrap();
-    let mut res = self.client.get(&raw_url).send().map_err(ErrorKind::Http)?;
+    let mut res = self.client.get(&raw_url).send()?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
       return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
@@ -142,11 +142,10 @@ impl UploadsSingleFiles for Hastebin {
     debug!("uploading single file");
     let mut res = self.client.post("https://hastebin.com/documents")
       .body(&file.content)
-      .send()
-      .map_err(ErrorKind::Http)?;
+      .send()?;
     debug!("res: {:?}", res);
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+    res.read_to_string(&mut content)?;
     debug!("content: {}", content);
     let success: JsonResult<HastebinSuccess> = serde_json::from_str(&content);
     debug!("success parse: {:?}", success);
