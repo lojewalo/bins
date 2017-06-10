@@ -66,7 +66,7 @@ fn base_app(has_default_bin: bool) -> StaticApp {
       .conflicts_with("inputs"))
     .arg(Arg::with_name("list-bins")
       .long("list-bins")
-      .short("-l")
+      .short("l")
       .help("list the available bins")
       .conflicts_with_all(&["bin",
         "public",
@@ -103,6 +103,12 @@ fn base_app(has_default_bin: bool) -> StaticApp {
       .takes_value(true)
       .value_name("range")
       .use_delimiter(false))
+    .arg(Arg::with_name("output")
+      .long("output")
+      .short("o")
+      .help("writes one file to the given path or writes multiple files in the given path as a directory")
+      .takes_value(true)
+      .value_name("path"))
 }
 
 pub fn add_feature_options(app: StaticApp) -> StaticApp {
