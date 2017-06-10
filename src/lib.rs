@@ -1,4 +1,5 @@
 #![feature(step_trait)]
+#![recursion_limit = "1024"]
 
 extern crate url;
 extern crate hyper;
@@ -12,6 +13,8 @@ extern crate scoped_threadpool;
 extern crate num_cpus;
 #[cfg(feature = "file_type_checking")]
 extern crate magic;
+#[macro_use]
+extern crate error_chain;
 
 pub mod error;
 pub mod files;
@@ -98,7 +101,7 @@ impl<T> Uploads for T
     let mut pool = Pool::new(num_cpus::get() as u32);
     let channel_size = contents.len();
     let mut urls: Vec<IndexedFile> = Vec::with_capacity(channel_size);
-    pool.scoped(|scope| {
+    let res: Result<()> = pool.scoped(|scope| {
       for file in contents {
         let name = file.name.clone();
         let tx_clone = tx.clone();
@@ -120,10 +123,11 @@ impl<T> Uploads for T
       debug!("sorting uploads");
       urls.sort_by_key(|i| i.name.clone());
       Ok(())
-    })?;
+    });
+    res?;
     if index {
       debug!("creating index");
-      let index = serde_json::to_string_pretty(&urls).map_err(BinsError::Json)?;
+      let index = serde_json::to_string_pretty(&urls)?;
       debug!("uploading index");
       self.upload_single(&UploadFile::new("index.json".to_owned(), index)).map(|x| vec![x])
     } else {
@@ -212,7 +216,7 @@ impl<T> Downloads for T
             debug!("downloading {:?}", url);
             let mut res = match self.client().get(url.url())
               .send()
-              .map_err(BinsError::Http) {
+              .map_err(ErrorKind::Http) {
               Ok(r) => r,
               Err(e) => {
                 if let Err(tx_e) = tx_clone.send(Err(e)) {
@@ -222,7 +226,7 @@ impl<T> Downloads for T
               }
             };
             let mut content = String::new();
-            if let Err(e) = res.read_to_string(&mut content).map_err(BinsError::Io) {
+            if let Err(e) = res.read_to_string(&mut content).map_err(ErrorKind::Io) {
               if let Err(tx_e) = tx_clone.send(Err(e)) {
                 error!("error sending result over channel: {}", tx_e);
               }
@@ -230,7 +234,7 @@ impl<T> Downloads for T
             }
             if res.status.class().default_code() != ::hyper::Ok {
               debug!("bad status code");
-              let e = BinsError::InvalidStatus(res.status_raw().0, Some(content));
+              let e = ErrorKind::InvalidStatus(res.status_raw().0, Some(content));
               if let Err(tx_e) = tx_clone.send(Err(e)) {
                 error!("error sending result over channel: {}", tx_e);
               }
@@ -263,11 +267,11 @@ impl<T> Downloads for T
         for i in order {
           if i == 0 {
             // block against subtracting 1 from 0 on a usize
-            return Err(BinsError::Main(MainError::RangeOutOfBounds(i)));
+            bail!("range out of bounds: asked for item {af}, but there was no item {af}", af = i);
           }
           let item = match map.remove(&(i - 1)) {
             Some(x) => x,
-            None => return Err(BinsError::Main(MainError::RangeOutOfBounds(i)))
+            None => bail!("range out of bounds: asked for item {af}, but there was no item {af}", af = i)
           };
           contents.push(item);
         }
@@ -276,7 +280,7 @@ impl<T> Downloads for T
         for key in keys {
           let file = match map.remove(&key) {
             Some(x) => x,
-            None => return Err(BinsError::Other)
+            None => return Err(ErrorKind::Other)
           };
           contents.push(file);
         }
@@ -287,7 +291,7 @@ impl<T> Downloads for T
     debug!("contents downloaded: {:?}", contents);
     if contents.is_empty() {
       debug!("no files downloaded. displaying filter error");
-      return Err(BinsError::Main(MainError::FilterTooStrict));
+      bail!("filter returned no results");
     }
     let res = if contents.len() == 1 {
       debug!("only one file downloaded");

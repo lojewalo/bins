@@ -79,12 +79,12 @@ impl CreatesHtmlUrls for Sprunge {
 impl CreatesRawUrls for Sprunge {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let url = self.create_url(id);
-    let mut res = self.client.get(&url).send().map_err(BinsError::Http)?;
+    let mut res = self.client.get(&url).send().map_err(ErrorKind::Http)?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
-      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+      return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
     }
     let parsed: serde_json::Result<Vec<IndexedFile>> = serde_json::from_str(&content);
     match parsed {
@@ -95,7 +95,7 @@ impl CreatesRawUrls for Sprunge {
           Some(i) => i,
           None => {
             debug!("could not parse an ID from one of the URLs in the index");
-            return Err(BinsError::Other);
+            bail!("one of the URLs in the index did not contain a valid ID");
           }
         };
         Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(PasteFileName::Explicit(name)), self.create_url(&id))).collect())
@@ -123,14 +123,14 @@ impl UploadsSingleFiles for Sprunge {
         .append_pair("sprunge", &contents.content)
         .finish())
       .send()
-      .map_err(BinsError::Http)?;
+      .map_err(ErrorKind::Http)?;
     debug!("response: {:?}", res);
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
     debug!("content: {}", content);
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
-      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+      return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
     }
     let url = content.replace("\n", "");
     Ok(PasteUrl::raw(Some(PasteFileName::Explicit(contents.name.clone())), url))

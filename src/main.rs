@@ -23,6 +23,8 @@ extern crate magic;
 extern crate clipboard;
 extern crate rand;
 extern crate base64;
+#[macro_use]
+extern crate error_chain;
 
 macro_rules! option {
   ($e: expr) => {{
@@ -294,14 +296,13 @@ impl<'a> Bins<'a> {
     let inputs = self.raw_inputs();
     if let Some(ref is) = inputs {
       if !is.is_empty() {
-        let url: Result<Url> = Url::parse(is[0]).map_err(BinsError::UrlParse);
-        if let Ok(u) = url {
+        if let Ok(u) = Url::parse(is[0]) {
           return self.download(u, if is.len() > 1 { Some(&is[1..]) } else { None }); // FIXME
         }
       }
     }
     if self.cli_options.range.is_some() {
-      return Err(BinsError::Main(MainError::RangeWithUpload));
+      bail!("cannot upload with --range");
     }
     self.upload(inputs)
   }
@@ -316,14 +317,14 @@ impl<'a> Bins<'a> {
     for c in s.trim().chars() {
       if "0123456789.".contains(c) {
         if !unit.is_empty() {
-          return Err(BinsError::Main(MainError::InvalidSizeLimit));
+          bail!("the file size limit specified in the config is invalid");
         }
         size.push(c);
       } else if "bBkKmMgGiI".contains(c) {
         unit.push(c);
       }
     }
-    let size: f64 = size.into_iter().collect::<String>().parse().map_err(|_| BinsError::Main(MainError::InvalidSizeLimit))?;
+    let size: f64 = size.into_iter().collect::<String>().parse().chain_err(|| "the file size limit specified in the config is invalid")?;
     let unit = unit.into_iter().collect::<String>().to_lowercase();
     let unit = if unit.is_empty() {
       1
@@ -336,7 +337,7 @@ impl<'a> Bins<'a> {
         "mib" => (2 as u64).pow(20),
         "gb" => (10 as u64).pow(9),
         "gib" => (2 as u64).pow(30),
-        _ => return Err(BinsError::Main(MainError::InvalidSizeLimit))
+        _ => bail!("the file size limit specified in the config is invalid")
       }
     };
     Ok(Some((size * unit as f64).round() as u64))
@@ -349,7 +350,7 @@ impl<'a> Bins<'a> {
   fn list_bins(&self) -> Result<String> {
     if let Some(true) = self.cli_options.json {
       let names: Vec<&String> = self.bins.keys().collect();
-      serde_json::to_string(&names).map_err(BinsError::Json)
+      Ok(serde_json::to_string(&names)?)
     } else {
       Ok(self.bins.keys().cloned().collect::<Vec<_>>().join("\n"))
     }
@@ -369,12 +370,12 @@ impl<'a> Bins<'a> {
     self.matches.value_of("bin")
       .map(|x| x.to_owned())
       .or_else(|| self.config.defaults.bin.clone())
-      .ok_or_else(|| BinsError::Main(MainError::NoBinSpecified))
+      .ok_or_else(|| "no bin was specified".into())
   }
 
   fn bin(&self) -> Result<&Box<Bin>> {
     let name = self.bin_name()?;
-    self.bins.get(&name).ok_or_else(|| BinsError::Main(MainError::NoSuchBin(name)))
+    self.bins.get(&name).ok_or_else(|| format!("there is no bin called \"{}\"", name).into())
   }
 
   fn check_features(&self, bin: &Box<Bin>) -> Result<()> {
@@ -392,7 +393,7 @@ impl<'a> Bins<'a> {
                 warn!("forcing upload with unsupported features");
                 Ok(())
               },
-              _ => Err(BinsError::Main(MainError::UnsupportedFeature(bin.name().to_owned(), feature)))
+              _ => bail!("bins stopped because {} does not support {} pastes", bin.name(), feature)
             }
           }
         }
@@ -408,17 +409,18 @@ impl<'a> Bins<'a> {
     };
 
     for &(name, ref file) in files {
-      let metadata = file.metadata().map_err(BinsError::Io)?;
+      let metadata = file.metadata().map_err(ErrorKind::Io)?;
       let size = metadata.len();
       if size > limit {
         if let Some(true) = self.cli_options.force {
           warn!("{} is {} bytes, which is over the {} byte limit", name, size, limit);
         } else {
-          return Err(BinsError::Main(MainError::FileOverSizeLimit {
-            name: name.to_string(),
-            size: size,
-            limit: limit
-          }));
+          bail!("{} is {} byte{}, which is over the size limit of {} byte{}",
+            name,
+            size,
+            if size == 1 { "" } else { "s" },
+            limit,
+            if limit == 1 { "" } else { "s" });
         }
       }
     }
@@ -429,13 +431,13 @@ impl<'a> Bins<'a> {
     let files: Option<Vec<(&str, File)>> = inputs.into_iter()
       .map(|f| File::open(f).map(|x| Path::new(f).file_name().and_then(|f| f.to_str()).map(|of| (of, x))))
       .collect::<IoResult<_>>()
-      .map_err(BinsError::Io)?;
+      .map_err(ErrorKind::Io)?;
     let files = match files {
       Some(f) => f,
       None => {
         // FIXME: json output
         error!("one or more inputs did not have a file name or did not have a valid utf-8 file name");
-        return Err(BinsError::Other);
+        bail!("invalid utf-8 file names");
       }
     };
     self.check_limit(&files)?;
@@ -445,7 +447,7 @@ impl<'a> Bins<'a> {
         f.read_to_string(&mut c).map(|_| (n, c))
       })
       .collect::<IoResult<_>>()
-      .map_err(BinsError::Io)?;
+      .map_err(ErrorKind::Io)?;
     Ok(contents.into_iter().map(|(n, c)| UploadFile::new(n.to_owned(), c)).collect())
   }
 
@@ -464,7 +466,7 @@ impl<'a> Bins<'a> {
       if processed.len() == 1 {
         processed[0].name = name.clone();
       } else {
-        return Err(BinsError::Main(MainError::NameWithMultipleFiles));
+        bail!("cannot use --name with multiple upload files");
       }
     }
     Ok(processed)
@@ -473,7 +475,7 @@ impl<'a> Bins<'a> {
   fn url_output(&self, bin: &Box<Bin>, urls: &[PasteUrl]) -> Result<String> {
     let mut strings = Vec::new();
     for u in urls {
-      let id = bin.id_from_html_url(u.url()).ok_or_else(|| BinsError::Main(MainError::ParseId))?;
+      let id = bin.id_from_html_url(u.url()).ok_or_else(|| ErrorKind::Msg("could not parse ID from URL".into()))?;
       let raw_urls = match bin.format_raw_url(&id) {
         Some(u) => vec![u],
         None => {
@@ -506,10 +508,10 @@ impl<'a> Bins<'a> {
   fn check_file_types(&self, files: &[UploadFile]) -> Result<()> {
     use magic::{Cookie, flags};
 
-    let cookie = Cookie::open(flags::NONE).map_err(BinsError::Magic)?;
-    cookie.load(&[""; 0]).map_err(BinsError::Magic)?;
+    let cookie = Cookie::open(flags::NONE).map_err(ErrorKind::Magic)?;
+    cookie.load(&[""; 0]).map_err(ErrorKind::Magic)?;
     for upload_file in files {
-      let kind = cookie.buffer(upload_file.content.as_bytes()).map_err(BinsError::Magic)?;
+      let kind = cookie.buffer(upload_file.content.as_bytes()).map_err(ErrorKind::Magic)?;
       if let Some(ref disallowed) = self.config.safety.disallowed_file_types {
         if disallowed.contains(&kind) {
           return match self.cli_options.force {
@@ -517,10 +519,7 @@ impl<'a> Bins<'a> {
               warn!("forcing upload with disallowed file type: ({} is {}, which is disallowed)", upload_file.name, kind);
               Ok(())
             },
-            _ => Err(BinsError::InvalidFileType {
-              name: upload_file.name.clone(),
-              kind: kind
-            })
+            _ => Err(ErrorKind::InvalidFileType(upload_file.name.clone(), kind).into())
           }
         }
       }
@@ -530,15 +529,15 @@ impl<'a> Bins<'a> {
 
   fn download(&self, url: Url, names: Option<&[&str]>) -> Result<String> {
     if names.is_some() && self.cli_options.range.is_some() {
-      return Err(BinsError::Main(MainError::RangeWithNames));
+      bail!("cannot specify file names with --range");
     }
-    let host = url.host_str().ok_or_else(|| BinsError::Main(MainError::MissingHost))?;
+    let host = url.host_str().ok_or_else(|| ErrorKind::Msg("url was missing a host".into()))?;
     let (is_html_url, bin) = match self.bins.iter().find(|&(_, b)| b.raw_host() == host) {
       Some(b) => (false, b.1),
       None => {
         match self.bins.iter().find(|&(_, b)| b.html_host() == host) {
           Some(b) => (true, b.1),
-          None => return Err(BinsError::Main(MainError::NoSuchHost(host.to_owned())))
+          None => bail!("no bin uses the hostname {}", host)
         }
       }
     };
@@ -547,7 +546,7 @@ impl<'a> Bins<'a> {
     } else {
       bin.id_from_raw_url(url.as_str())
     };
-    let id = id.ok_or_else(|| BinsError::Main(MainError::ParseId))?;
+    let id = id.ok_or_else(|| ErrorKind::Msg("could not parse ID from URL".into()))?;
     if let Some(ref output_mode) = self.cli_options.url_output {
       let urls = match *output_mode {
         UrlOutputMode::Html => bin.create_html_url(&id),
@@ -573,7 +572,7 @@ impl<'a> Bins<'a> {
     };
     let download = bin.download(&id, &download_info)?;
     if let Some(true) = self.cli_options.json {
-      let j = serde_json::to_string(&download).map_err(BinsError::Json)?;
+      let j = serde_json::to_string(&download).map_err(ErrorKind::Json)?;
       Ok(j)
     } else {
       let output = match download {
@@ -592,7 +591,7 @@ impl<'a> Bins<'a> {
 fn get_stdin() -> Result<UploadFile> {
   let mut content = String::new();
   let mut stdin = std::io::stdin();
-  stdin.read_to_string(&mut content).map_err(BinsError::Io)?;
+  stdin.read_to_string(&mut content).map_err(ErrorKind::Io)?;
   Ok(UploadFile::new("stdin".to_owned(), content))
 }
 
@@ -613,12 +612,12 @@ fn error_parents(error: &Error) -> Vec<&Error> {
 
 fn get_config() -> Result<Config> {
   let mut f = match find_config_path() {
-    Some(p) => File::open(p).map_err(BinsError::Io)?,
+    Some(p) => File::open(p).map_err(ErrorKind::Io)?,
     None => create_config_file()?
   };
   let mut content = String::new();
-  f.read_to_string(&mut content).map_err(BinsError::Io)?;
-  toml::from_str(&content).map_err(BinsError::Toml)
+  f.read_to_string(&mut content).map_err(ErrorKind::Io)?;
+  Ok(toml::from_str(&content)?)
 }
 
 fn create_xdg_config_file() -> Result<File> {
@@ -626,15 +625,14 @@ fn create_xdg_config_file() -> Result<File> {
     let xdg_path = Path::new(&xdg_dir);
     let xdg_config_path = xdg_path.join("bins.cfg");
     if xdg_path.exists() && xdg_path.is_dir() && !xdg_config_path.exists() {
-      return OpenOptions::new()
+      return Ok(OpenOptions::new()
         .create(true)
         .read(true)
         .write(true)
-        .open(xdg_config_path)
-        .map_err(BinsError::Io);
+        .open(xdg_config_path)?);
     }
   }
-  Err(BinsError::Config)
+  Err(ErrorKind::Config.into())
 }
 
 fn create_home_config_file() -> Result<File> {
@@ -643,24 +641,22 @@ fn create_home_config_file() -> Result<File> {
     let home_folder = home.join(".config");
     let home_folder_config = home_folder.join("bins.cfg");
     if home_folder.exists() && home_folder.is_dir() && !home_folder_config.exists() {
-      return OpenOptions::new()
+      return Ok(OpenOptions::new()
         .create(true)
         .read(true)
         .write(true)
-        .open(home_folder_config)
-        .map_err(BinsError::Io);
+        .open(home_folder_config)?);
     }
     let home_config = Path::new(&home_dir).join(".bins.cfg");
     if home.exists() && home.is_dir() && !home_config.exists() {
-      return OpenOptions::new()
+      return Ok(OpenOptions::new()
         .create(true)
         .read(true)
         .write(true)
-        .open(home_config)
-        .map_err(BinsError::Io);
+        .open(home_config)?);
     }
   }
-  Err(BinsError::Config)
+  Err(ErrorKind::Config.into())
 }
 
 fn create_config_file() -> Result<File> {
@@ -668,16 +664,16 @@ fn create_config_file() -> Result<File> {
     Ok(f) => f,
     Err(_) => match create_home_config_file() {
       Ok(hf) => hf,
-      Err(_) => return Err(BinsError::Config)
+      Err(_) => return Err(ErrorKind::Config.into())
     }
   };
   let mut default_config = String::new();
   GzDecoder::new(config::DEFAULT_CONFIG_GZIP)
-    .map_err(BinsError::Io)?
+    .map_err(ErrorKind::Io)?
     .read_to_string(&mut default_config)
-    .map_err(BinsError::Io)?;
-  f.write_all(default_config.as_bytes()).map_err(BinsError::Io)?;
-  f.seek(SeekFrom::Start(0)).map_err(BinsError::Io)?;
+    .map_err(ErrorKind::Io)?;
+  f.write_all(default_config.as_bytes()).map_err(ErrorKind::Io)?;
+  f.seek(SeekFrom::Start(0)).map_err(ErrorKind::Io)?;
   Ok(f)
 }
 

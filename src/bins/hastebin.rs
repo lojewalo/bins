@@ -67,12 +67,12 @@ impl CreatesHtmlUrls for Hastebin {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let html_url = self.format_html_url(id).unwrap();
     let raw_url = self.format_raw_url(id).unwrap();
-    let mut res = self.client.get(&raw_url).send().map_err(BinsError::Http)?;
+    let mut res = self.client.get(&raw_url).send().map_err(ErrorKind::Http)?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
-      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+      return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
     }
     let parsed: serde_json::Result<Vec<IndexedFile>> = serde_json::from_str(&content);
     match parsed {
@@ -83,7 +83,7 @@ impl CreatesHtmlUrls for Hastebin {
           Some(i) => i,
           None => {
             debug!("could not parse an ID from one of the URLs in the index");
-            return Err(BinsError::Other);
+            bail!("one of the URLs in the index did not contain a valid ID");
           }
         };
         Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(PasteFileName::Explicit(name)), self.format_html_url(&id).unwrap())).collect())
@@ -101,12 +101,12 @@ impl CreatesRawUrls for Hastebin {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     debug!("creating raw url for {}", id);
     let raw_url = self.format_raw_url(id).unwrap();
-    let mut res = self.client.get(&raw_url).send().map_err(BinsError::Http)?;
+    let mut res = self.client.get(&raw_url).send().map_err(ErrorKind::Http)?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
-      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+      return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
     }
     let parsed: serde_json::Result<Vec<IndexedFile>> = serde_json::from_str(&content);
     match parsed {
@@ -117,7 +117,7 @@ impl CreatesRawUrls for Hastebin {
           Some(i) => i,
           None => {
             debug!("could not parse an ID from one of the URLs in the index");
-            return Err(BinsError::Other);
+            bail!("one of the URLs in the index did not contain a valid ID");
           }
         };
         Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(PasteFileName::Explicit(name)), self.format_raw_url(&id).unwrap())).collect())
@@ -143,10 +143,10 @@ impl UploadsSingleFiles for Hastebin {
     let mut res = self.client.post("https://hastebin.com/documents")
       .body(&file.content)
       .send()
-      .map_err(BinsError::Http)?;
+      .map_err(ErrorKind::Http)?;
     debug!("res: {:?}", res);
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
     debug!("content: {}", content);
     let success: JsonResult<HastebinSuccess> = serde_json::from_str(&content);
     debug!("success parse: {:?}", success);
@@ -159,13 +159,13 @@ impl UploadsSingleFiles for Hastebin {
     let error: JsonResult<HastebinError> = serde_json::from_str(&content);
     debug!("error parse: {:?}", error);
     if let Ok(e) = error {
-      return Err(BinsError::BinError(e.message));
+      return Err(ErrorKind::BinError(e.message).into());
     }
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
-      Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)))
+      Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into())
     } else {
-      Err(BinsError::InvalidResponse)
+      Err(ErrorKind::InvalidResponse.into())
     }
   }
 }

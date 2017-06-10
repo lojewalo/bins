@@ -34,26 +34,26 @@ impl Bitbucket {
 
   fn get_snippet(&self, id: &str) -> Result<Snippet> {
     let url_str = format!("https://bitbucket.org/snippets/{}", id);
-    let url = Url::parse(&url_str).map_err(BinsError::UrlParse)?;
+    let url = Url::parse(&url_str).map_err(ErrorKind::UrlParse)?;
     let segments: Vec<_> = match url.path_segments() {
       Some(p) => p.collect(),
-      None => return Err(BinsError::Main(MainError::ParseId))
+      None => bail!("could not parse ID from URL")
     };
     if segments.len() < 3 || segments[0] != "snippets" {
-      return Err(BinsError::Custom(String::from("url path expected to be of form /snippets/{username}/{id}")));
+      bail!("url path expected to be of form /snippets/{username}/{id}");
     }
     let username = segments[1];
     let id = segments[2];
 
-    let api_url = Url::parse(&format!("https://api.bitbucket.org/2.0/snippets/{}/{}", username, id)).map_err(BinsError::UrlParse)?;
+    let api_url = Url::parse(&format!("https://api.bitbucket.org/2.0/snippets/{}/{}", username, id)).map_err(ErrorKind::UrlParse)?;
     let mut res = self.client.get(api_url)
       .header(UserAgent(format!("bins/{}", crate_version!())))
       .header(self.authorization()?)
       .send()
-      .map_err(BinsError::Http)?;
+      .map_err(ErrorKind::Http)?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(BinsError::Io)?;
-    serde_json::from_str(&content).map_err(BinsError::Json)
+    res.read_to_string(&mut content)?;
+    Ok(serde_json::from_str(&content)?)
   }
 
   fn random_boundary(&self) -> String {
@@ -64,7 +64,7 @@ impl Bitbucket {
     let config_values = (&self.config.bitbucket.username, &self.config.bitbucket.app_password);
     let (username, app_password) = match config_values {
       (&Some(ref u), &Some(ref ap)) if !u.is_empty() && !ap.is_empty() => (u, ap),
-      _ => return Err(BinsError::Custom(String::from("no bitbucket username/app password set")))
+      _ => bail!("no bitbucket username/app password set")
     };
     Ok(Authorization(Basic {
       username: username.to_string(),
@@ -90,7 +90,7 @@ impl Bitbucket {
       title: "bins".to_string(),
       is_private: self.cli.private.unwrap_or_default()
     };
-    let properties_json = serde_json::to_string(&properties).map_err(BinsError::Json)?;
+    let properties_json = serde_json::to_string(&properties).map_err(ErrorKind::Json)?;
 
     let mut body = MultipartRelatedBody::new(boundary);
     body.add_json(&properties_json);
@@ -143,7 +143,7 @@ impl CreatesHtmlUrls for Bitbucket {
         let s = f.links.get("self").map(|l| l.href.to_string());
         match s {
           Some(x) => Ok(PasteUrl::raw(Some(PasteFileName::Explicit(name.clone())), x)),
-          None => Err(BinsError::InvalidResponse)
+          None => Err(ErrorKind::InvalidResponse.into())
         }
       })
       .collect()
@@ -168,7 +168,7 @@ impl CreatesRawUrls for Bitbucket {
         let s = f.links.get("self").map(|l| l.href.to_string());
         match s {
           Some(x) => Ok(PasteUrl::raw(Some(PasteFileName::Explicit(name.clone())), x)),
-          None => Err(BinsError::InvalidResponse)
+          None => Err(ErrorKind::InvalidResponse.into())
         }
       })
       .collect()
@@ -210,18 +210,18 @@ impl Uploads for Bitbucket {
       .headers(headers)
       .body(&body)
       .send()
-      .map_err(BinsError::Http)?;
+      .map_err(ErrorKind::Http)?;
 
     let mut response_body = String::new();
-    response.read_to_string(&mut response_body).map_err(BinsError::Io)?;
+    response.read_to_string(&mut response_body).map_err(ErrorKind::Io)?;
     if response.status != StatusCode::Created {
-      return Err(BinsError::BinError(response_body));
+      return Err(ErrorKind::BinError(response_body).into());
     }
 
-    let snippet: serde_json::Value = serde_json::from_str(&response_body).map_err(BinsError::Json)?;
+    let snippet: serde_json::Value = serde_json::from_str(&response_body).map_err(ErrorKind::Json)?;
     match snippet.pointer("/links/html/href") {
       Some(h) if h.is_string() => Ok(vec![PasteUrl::html(None, h.as_str().unwrap().to_string())]),
-      _ => Err(BinsError::InvalidResponse)
+      _ => Err(ErrorKind::InvalidResponse.into())
     }
   }
 }

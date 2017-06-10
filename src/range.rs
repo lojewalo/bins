@@ -22,18 +22,18 @@ impl<Idx> BidirectionalRange<Idx> {
   pub fn parse_usize(string: &str) -> Result<BidirectionalRange<usize>> {
     let split: Vec<&str> = string.split('-').collect();
     if split.len() != 2 {
-      let number: usize = split[0].parse().map_err(Some).map_err(BinsError::InvalidRange)?;
+      let number: usize = split[0].parse().map_err(ErrorKind::BadRangeNumber)?;
       Ok(BidirectionalRange::new(number, number + 1))
     } else if split.len() == 2 {
-      let start: usize = split[0].parse().map_err(Some).map_err(BinsError::InvalidRange)?;
-      let end: usize = split[1].parse().map_err(Some).map_err(BinsError::InvalidRange)?;
+      let start: usize = split[0].parse().map_err(ErrorKind::BadRangeNumber)?;
+      let end: usize = split[1].parse().map_err(ErrorKind::BadRangeNumber)?;
       if start < end {
         Ok(BidirectionalRange::new(start, end + 1))
       } else {
         Ok(BidirectionalRange::new(start, end - 1))
       }
     } else {
-      Err(BinsError::InvalidRange(None))
+      Err(ErrorKind::BadRange.into())
     }
   }
 }

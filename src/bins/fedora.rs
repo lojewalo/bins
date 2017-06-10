@@ -64,12 +64,12 @@ impl CreatesHtmlUrls for Fedora {
   fn create_html_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     let html_url = self.format_html_url(id).unwrap();
     let raw_url = self.format_raw_url(id).unwrap();
-    let mut res = self.client.get(&raw_url).send().map_err(BinsError::Http)?;
+    let mut res = self.client.get(&raw_url).send().map_err(ErrorKind::Http)?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
-      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+      return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
     }
     let parsed: serde_json::Result<Vec<IndexedFile>> = serde_json::from_str(&content);
     match parsed {
@@ -80,7 +80,7 @@ impl CreatesHtmlUrls for Fedora {
           Some(i) => i,
           None => {
             debug!("could not parse an ID from one of the URLs in the index");
-            return Err(BinsError::Other);
+            bail!("one of the URLs in the index did not contain a valid ID");
           }
         };
         Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(PasteFileName::Explicit(name)), self.format_html_url(&id).unwrap())).collect())
@@ -98,12 +98,12 @@ impl CreatesRawUrls for Fedora {
   fn create_raw_url(&self, id: &str) -> Result<Vec<PasteUrl>> {
     debug!("creating raw url for {}", id);
     let raw_url = self.format_raw_url(id).unwrap();
-    let mut res = self.client.get(&raw_url).send().map_err(BinsError::Http)?;
+    let mut res = self.client.get(&raw_url).send().map_err(ErrorKind::Http)?;
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
-      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+      return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
     }
     let parsed: serde_json::Result<Vec<IndexedFile>> = serde_json::from_str(&content);
     match parsed {
@@ -114,7 +114,7 @@ impl CreatesRawUrls for Fedora {
           Some(i) => i,
           None => {
             debug!("could not parse an ID from one of the URLs in the index");
-            return Err(BinsError::Other);
+            bail!("one of the URLs in the index did not contain a valid ID");
           }
         };
         Ok(ids.into_iter().map(|(name, id)| PasteUrl::raw(Some(PasteFileName::Explicit(name)), self.format_raw_url(&id).unwrap())).collect())
@@ -143,25 +143,25 @@ impl UploadsSingleFiles for Fedora {
       contents: file.content.clone(),
       title: file.name.clone()
     };
-    let params_json = serde_json::to_string(&params).map_err(BinsError::Json)?;
+    let params_json = serde_json::to_string(&params).map_err(ErrorKind::Json)?;
     let mut res = self.client.post("https://paste.fedoraproject.org/api/paste/submit")
       .header(::hyper::header::ContentType::json())
       .body(&params_json)
       .send()
-      .map_err(BinsError::Http)?;
+      .map_err(ErrorKind::Http)?;
     debug!("res: {:?}", res);
     let mut content = String::new();
-    res.read_to_string(&mut content).map_err(BinsError::Io)?;
+    res.read_to_string(&mut content).map_err(ErrorKind::Io)?;
     debug!("content: {}", content);
     if res.status.class().default_code() != ::hyper::Ok {
       debug!("bad status code");
-      return Err(BinsError::InvalidStatus(res.status_raw().0, Some(content)));
+      return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
     }
-    let response: FedoraResponse = serde_json::from_str(&content).map_err(BinsError::Json)?;
+    let response: FedoraResponse = serde_json::from_str(&content).map_err(ErrorKind::Json)?;
     debug!("parse: {:?}", response);
     if let Some(false) = response.success {
       debug!("upload was a failure");
-      return Err(BinsError::BinError(response.message.unwrap_or_else(|| String::from("<no error given>"))));
+      return Err(ErrorKind::BinError(response.message.unwrap_or_else(|| String::from("<no error given>"))).into());
     } else {
       debug!("upload was a success. creating html url");
       let url = response.url;
