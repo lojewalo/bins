@@ -60,7 +60,7 @@ impl Gist {
       debug!("bad status code");
       return Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into());
     }
-    Ok(serde_json::from_str(&content)?)
+    serde_json::from_str(&content).chain_err(|| "could not parse gist response")
   }
 }
 

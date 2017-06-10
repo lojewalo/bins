@@ -53,7 +53,7 @@ impl Bitbucket {
       .map_err(ErrorKind::Http)?;
     let mut content = String::new();
     res.read_to_string(&mut content)?;
-    Ok(serde_json::from_str(&content)?)
+    serde_json::from_str(&content).chain_err(|| "could not parse bitbucket response")
   }
 
   fn random_boundary(&self) -> String {

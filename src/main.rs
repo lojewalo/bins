@@ -350,7 +350,7 @@ impl<'a> Bins<'a> {
   fn list_bins(&self) -> Result<String> {
     if let Some(true) = self.cli_options.json {
       let names: Vec<&String> = self.bins.keys().collect();
-      Ok(serde_json::to_string(&names)?)
+      serde_json::to_string(&names).chain_err(|| "could not serialize list of bins")
     } else {
       Ok(self.bins.keys().cloned().collect::<Vec<_>>().join("\n"))
     }
@@ -617,7 +617,7 @@ fn get_config() -> Result<Config> {
   };
   let mut content = String::new();
   f.read_to_string(&mut content).map_err(ErrorKind::Io)?;
-  Ok(toml::from_str(&content)?)
+  toml::from_str(&content).chain_err(|| "could not parse configuration file")
 }
 
 fn create_xdg_config_file() -> Result<File> {
@@ -625,11 +625,12 @@ fn create_xdg_config_file() -> Result<File> {
     let xdg_path = Path::new(&xdg_dir);
     let xdg_config_path = xdg_path.join("bins.cfg");
     if xdg_path.exists() && xdg_path.is_dir() && !xdg_config_path.exists() {
-      return Ok(OpenOptions::new()
+      return OpenOptions::new()
         .create(true)
         .read(true)
         .write(true)
-        .open(xdg_config_path)?);
+        .open(xdg_config_path)
+        .chain_err(|| "could not open/create XDG_CONFIG_DIR config file");
     }
   }
   Err(ErrorKind::Config.into())
@@ -641,19 +642,21 @@ fn create_home_config_file() -> Result<File> {
     let home_folder = home.join(".config");
     let home_folder_config = home_folder.join("bins.cfg");
     if home_folder.exists() && home_folder.is_dir() && !home_folder_config.exists() {
-      return Ok(OpenOptions::new()
+      return OpenOptions::new()
         .create(true)
         .read(true)
         .write(true)
-        .open(home_folder_config)?);
+        .open(home_folder_config)
+        .chain_err(|| "could not open/create HOME/.config config file");
     }
     let home_config = Path::new(&home_dir).join(".bins.cfg");
     if home.exists() && home.is_dir() && !home_config.exists() {
-      return Ok(OpenOptions::new()
+      return OpenOptions::new()
         .create(true)
         .read(true)
         .write(true)
-        .open(home_config)?);
+        .open(home_config)
+        .chain_err(|| "could not open/create HOME config file");
     }
   }
   Err(ErrorKind::Config.into())
