@@ -599,11 +599,15 @@ impl<'a> Bins<'a> {
           parts[index] = format!("{}_{}", parts[index], tries);
           download_path = path.join(parts.join("."));
         }
+        let name = download_path.to_string_lossy().into_owned();
         let mut file = OpenOptions::new()
           .write(true)
           .create(true)
-          .open(download_path)?;
-        file.write_all(download.content.as_bytes())?;
+          .open(download_path)
+          .chain_err(|| format!("could not open {}", name))?;
+        file
+          .write_all(download.content.as_bytes())
+          .chain_err(|| format!("could not write to {}", name))?;
       }
       return Ok(Default::default());
     }
