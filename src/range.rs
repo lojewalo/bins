@@ -50,7 +50,7 @@ impl<Idx> BidirectionalRange<Idx>
   }
 }
 
-impl<A: Step + Clone> Iterator for BidirectionalRange<A>
+impl<A: Step + Copy> Iterator for BidirectionalRange<A>
   where for<'a> &'a A: Add<&'a A, Output=A>,
         for<'a> &'a A: Sub<&'a A, Output=A>
 {
@@ -68,8 +68,8 @@ impl<A: Step + Clone> Iterator for BidirectionalRange<A>
         c
       },
       None => {
-        self.current = Some(self.start.clone());
-        return self.current.clone();
+        self.current = Some(self.start);
+        return self.current;
       }
     };
     if self.start < self.end {
@@ -77,7 +77,7 @@ impl<A: Step + Clone> Iterator for BidirectionalRange<A>
     } else {
       self.current = Some(current.sub_one());
     }
-    self.current.clone()
+    self.current
   }
 }
 
