@@ -585,11 +585,25 @@ impl<'a> Bins<'a> {
         Paste::Multiple(fs) => fs
       };
       for download in downloads {
+        let download_name = download.name.name();
+        let mut download_path = path.join(&download_name);
+        let mut tries = 0;
+        while download_path.exists() {
+          tries += 1;
+          let mut parts: Vec<String> = download_name.split('.').map(|x| x.to_string()).collect();
+          let len = parts.len();
+          let index = match len {
+            1 => 0,
+            _ => len - 2
+          };
+          parts[index] = format!("{}_{}", parts[index], tries);
+          download_path = path.join(parts.join("."));
+        }
         let mut file = OpenOptions::new()
           .write(true)
           .create(true)
-          .open(path.join(download.name.name()))?;
-        file.write_all(&download.content.as_bytes())?;
+          .open(download_path)?;
+        file.write_all(download.content.as_bytes())?;
       }
       return Ok(Default::default());
     }
