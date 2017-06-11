@@ -1,3 +1,27 @@
+<a name="v2.0.0"></a>
+## v2.0.0 (2017-06-11)
+
+
+#### Features
+
+*   threading
+*   fedora pastebin support
+*   debug mode (--debug/-d)
+*   JSON output (--json/-j)
+
+#### Bug Fixes
+
+*   remove pastie, since it's dead
+
+#### Breaking Changes
+
+*   --service is gone (see --bin/-b)
+*   --write is gone (see --output/-o)
+*   --input is gone (use URL as first argument to download)
+*   all files are downloaded by default (old behavior specified by --list-all/-L)
+
+
+
 <a name="v1.2.0"></a>
 ## v1.2.0 (2016-07-16)
 
