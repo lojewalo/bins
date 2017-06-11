@@ -76,7 +76,8 @@ pub struct CommandLineOptions {
   #[cfg(feature = "clipboard_support")]
   pub copy: Option<bool>,
   pub list_all: Option<bool>,
-  pub range: Option<Vec<BidirectionalRange<usize>>>
+  pub range: Option<Vec<BidirectionalRange<usize>>>,
+  pub output: Option<String>
 }
 
 impl CommandLineOptions {

@@ -169,6 +169,10 @@ fn inner() -> i32 {
     cli_options.name = Some(name.to_owned());
   }
 
+  if let Some(path) = matches.value_of("output") {
+    cli_options.output = Some(path.to_owned());
+  }
+
   if matches.is_present("raw-urls") {
     cli_options.url_output = Some(UrlOutputMode::Raw);
   } else if matches.is_present("html-urls") {
@@ -434,7 +438,6 @@ impl<'a> Bins<'a> {
     let files = match files {
       Some(f) => f,
       None => {
-        // FIXME: json output
         error!("one or more inputs did not have a file name or did not have a valid utf-8 file name");
         bail!("invalid utf-8 file names");
       }
@@ -569,6 +572,27 @@ impl<'a> Bins<'a> {
       DownloadInfo::empty()
     };
     let download = bin.download(&id, &download_info)?;
+    if let Some(ref path_str) = self.cli_options.output {
+      let path = Path::new(path_str);
+      if !path.exists() {
+        bail!("{} does not exist", path_str);
+      }
+      if !path.is_dir() {
+        bail!("{} is not a directory", path_str);
+      }
+      let downloads = match download {
+        Paste::Single(f) => vec![f],
+        Paste::Multiple(fs) => fs
+      };
+      for download in downloads {
+        let mut file = OpenOptions::new()
+          .write(true)
+          .create(true)
+          .open(path.join(download.name.name()))?;
+        file.write_all(&download.content.as_bytes())?;
+      }
+      return Ok(Default::default());
+    }
     if let Some(true) = self.cli_options.json {
       let j = serde_json::to_string(&download)?;
       Ok(j)
