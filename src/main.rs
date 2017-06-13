@@ -384,6 +384,7 @@ impl<'a> Bins<'a> {
     self.matches.value_of("bin")
       .map(|x| x.to_owned())
       .or_else(|| self.config.defaults.bin.clone())
+      .and_then(|x| if x.trim().is_empty() { None } else { Some(x) })
       .ok_or_else(|| "no bin was specified".into())
   }
 
