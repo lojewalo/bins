@@ -21,7 +21,7 @@ fn completions() {
     None => return,
     Some(outdir) => outdir,
   };
-  let mut app = create_app(false);
+  let mut app = create_app();
   app.gen_completions("bins", Shell::Bash, &outdir);
   app.gen_completions("bins", Shell::Zsh, &outdir);
   app.gen_completions("bins", Shell::Fish, &outdir);

@@ -111,7 +111,7 @@ fn inner() -> i32 {
     }
   };
 
-  let matches = cli::create_app(config.defaults.bin.is_some()).get_matches();
+  let matches = cli::create_app().get_matches();
 
   let level = if matches.is_present("debug") {
     LogLevel::Debug
@@ -129,6 +129,16 @@ fn inner() -> i32 {
   }
 
   let mut cli_options = CommandLineOptions::default();
+
+  if matches.is_present("list-bins") && matches.is_present("bin") {
+    error!("--bin cannot be used with --list-bins");
+    return 1;
+  }
+
+  if !matches.is_present("list-bins") && !config.defaults.bin.is_some() && !matches.is_present("bin") {
+    error!("you must specify a bin with --bin or set a default bin");
+    return 1;
+  }
 
   if matches.is_present("public") {
     cli_options.private = Some(false);

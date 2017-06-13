@@ -2,7 +2,7 @@ use clap::{App, Arg, AppSettings};
 
 type StaticApp = App<'static, 'static>;
 
-fn base_app(has_default_bin: bool) -> StaticApp {
+fn base_app() -> StaticApp {
   App::new(crate_name!())
     .about("A tool for pasting from the terminal")
     .author(crate_authors!())
@@ -22,7 +22,6 @@ fn base_app(has_default_bin: bool) -> StaticApp {
       .long("bin")
       .short("b")
       .help("specify the upload bin")
-      .required(!has_default_bin)
       .takes_value(true)
       .value_name("bin")
       .possible_values(&["hastebin", "sprunge", "gist", "fedora", "bitbucket", "pastebin"]))
@@ -68,8 +67,7 @@ fn base_app(has_default_bin: bool) -> StaticApp {
       .long("list-bins")
       .short("l")
       .help("list the available bins")
-      .conflicts_with_all(&["bin",
-        "public",
+      .conflicts_with_all(&["public",
         "private",
         "anonymous",
         "authed",
@@ -128,7 +126,7 @@ pub fn add_feature_options(app: StaticApp) -> StaticApp {
   }
 }
 
-pub fn create_app(has_default_bin: bool) -> StaticApp {
-  let app = base_app(has_default_bin);
+pub fn create_app() -> StaticApp {
+  let app = base_app();
   add_feature_options(app)
 }
