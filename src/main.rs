@@ -393,7 +393,7 @@ impl<'a> Bins<'a> {
     self.bins.get(&name).ok_or_else(|| format!("there is no bin called \"{}\"", name).into())
   }
 
-  fn check_features(&self, bin: &Box<Bin>) -> Result<()> {
+  fn check_features(&self, bin: &Bin) -> Result<()> {
     let bin_features = bin.features();
     let features = self.cli_features();
     for (feature, status) in features {
@@ -484,7 +484,7 @@ impl<'a> Bins<'a> {
     Ok(processed)
   }
 
-  fn url_output(&self, bin: &Box<Bin>, urls: &[PasteUrl]) -> Result<String> {
+  fn url_output(&self, bin: &Bin, urls: &[PasteUrl]) -> Result<String> {
     let mut strings = Vec::new();
     for u in urls {
       let id = bin.id_from_html_url(u.url()).ok_or_else(|| ErrorKind::Msg("could not parse ID from URL".into()))?;
@@ -504,14 +504,14 @@ impl<'a> Bins<'a> {
 
   fn upload(&self, inputs: Option<Vec<&str>>) -> Result<String> {
     let bin = self.bin()?;
-    self.check_features(bin)?;
+    self.check_features(bin.as_ref())?;
 
     let upload_files = self.inputs(inputs)?;
     #[cfg(feature = "file_type_checking")]
     self.check_file_types(&upload_files)?;
     let urls = bin.upload(&upload_files, self.cli_options.url_output.is_none())?;
     if let Some(UrlOutputMode::Raw) = self.cli_options.url_output {
-      return self.url_output(bin, &urls);
+      return self.url_output(bin.as_ref(), &urls);
     }
     Ok(urls.into_iter().map(|u| u.url().to_string()).collect::<Vec<String>>().join("\n"))
   }
