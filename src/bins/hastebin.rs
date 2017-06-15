@@ -1,7 +1,6 @@
 use url::Url;
 use hyper::Client;
 use serde_json;
-use serde_json::Result as JsonResult;
 
 use lib::*;
 use lib::Result;
@@ -9,8 +8,6 @@ use lib::error::*;
 use lib::files::*;
 
 use std::io::Read;
-
-// TODO: custom servers
 
 pub struct Hastebin {
   client: Client
@@ -147,24 +144,19 @@ impl UploadsSingleFiles for Hastebin {
     let mut content = String::new();
     res.read_to_string(&mut content)?;
     debug!("content: {}", content);
-    let success: JsonResult<HastebinSuccess> = serde_json::from_str(&content);
-    debug!("success parse: {:?}", success);
-    if let Ok(success) = success {
-      debug!("upload was a success. creating html url");
-      let url = self.format_html_url(&success.key).unwrap();
-      return Ok(PasteUrl::html(Some(PasteFileName::Explicit(file.name.clone())), url));
-    }
-    debug!("parse was a failure, try to parse as error");
-    let error: JsonResult<HastebinError> = serde_json::from_str(&content);
-    debug!("error parse: {:?}", error);
-    if let Ok(e) = error {
-      return Err(ErrorKind::BinError(e.message).into());
-    }
-    if res.status.class().default_code() != ::hyper::Ok {
-      debug!("bad status code");
-      Err(ErrorKind::InvalidStatus(res.status_raw().0, Some(content)).into())
-    } else {
-      Err(ErrorKind::InvalidResponse.into())
+    let response: HastebinResponse = serde_json::from_str(&content)
+      .chain_err(|| ErrorKind::InvalidResponse)?;
+    debug!("parse success: {:?}", response);
+    match response {
+      HastebinResponse::Success { key } => {
+        debug!("upload was a success. creating html url");
+        let url = self.format_html_url(&key).unwrap();
+        Ok(PasteUrl::html(Some(PasteFileName::Explicit(file.name.clone())), url))
+      },
+      HastebinResponse::Error { message } => {
+        debug!("upload was a failure");
+        Err(ErrorKind::BinError(message).into())
+      }
     }
   }
 }
@@ -176,11 +168,8 @@ impl HasClient for Hastebin {
 }
 
 #[derive(Debug, Deserialize)]
-struct HastebinSuccess {
-  key: String
-}
-
-#[derive(Debug, Deserialize)]
-struct HastebinError {
-  message: String
+#[serde(untagged)]
+enum HastebinResponse {
+  Success { key: String },
+  Error { message: String }
 }
