@@ -38,7 +38,7 @@ clipboard = { version = "0.3", optional = true }
 error-chain = "0.10"
 
 [build-dependencies]
-git2 = "0.6"
+git2 = "0.7"
 rustc_version = "0.2"
 time = "0.1"
 clap = "2.9"

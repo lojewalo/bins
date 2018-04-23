@@ -11,7 +11,8 @@ pub struct Config {
   pub gist: ConfigGist,
   pub pastebin: ConfigPastebin,
   pub hastebin: ConfigHastebin,
-  pub bitbucket: ConfigBitbucket
+  pub bitbucket: ConfigBitbucket,
+  pub pastegg: ConfigPasteGg,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -62,6 +63,12 @@ pub struct ConfigHastebin {
 pub struct ConfigBitbucket {
   pub username: Option<String>,
   pub app_password: Option<String>
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct ConfigPasteGg {
+  pub key: Option<String>,
 }
 
 #[derive(Debug, Default)]

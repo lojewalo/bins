@@ -208,7 +208,8 @@ fn inner() -> i32 {
       box bins::Fedora::new(),
       box bins::Gist::new(config.clone(), cli_options.clone()),
       box bins::Bitbucket::new(config.clone(), cli_options.clone()),
-      box bins::Pastebin::new(config.clone(), cli_options.clone())
+      box bins::Pastebin::new(config.clone(), cli_options.clone()),
+      box bins::PasteGg::new(config.clone(), cli_options.clone()),
     ];
     bins.into_iter().map(|b| (b.name().to_owned(), b)).collect()
   };

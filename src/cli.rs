@@ -24,7 +24,7 @@ fn base_app() -> StaticApp {
       .help("specify the upload bin")
       .takes_value(true)
       .value_name("bin")
-      .possible_values(&["hastebin", "sprunge", "gist", "fedora", "bitbucket", "pastebin"]))
+      .possible_values(&["hastebin", "sprunge", "gist", "fedora", "bitbucket", "pastebin", "pastegg"]))
     .arg(Arg::with_name("public")
       .long("public")
       .short("P")
