@@ -7,9 +7,7 @@
 [![Crates.io](https://img.shields.io/crates/d/bins.svg)](https://crates.io/crates/bins)
 [![license](https://img.shields.io/github/license/jkcclemens/bins.svg)](https://github.com/jkcclemens/bins/blob/master/LICENSE)
 
-Supports [GitHub Gist](https://gist.github.com/), [Pastebin](http://pastebin.com/), [hastebin](http://hastebin.com/),
-[sprunge](http://sprunge.us/), [Bitbucket snippets](https://bitbucket.org/snippets/), and
-[fedora pastebin](https://paste.fedoraproject.org/).
+Supports [GitHub Gist](https://gist.github.com/), [Pastebin](http://pastebin.com/), [hastebin](http://hastebin.com/), [sprunge](http://sprunge.us/), [Bitbucket snippets](https://bitbucket.org/snippets/), [fedora pastebin](https://paste.fedoraproject.org/), and [paste.gg](https://paste.gg).
 
 ---
 
