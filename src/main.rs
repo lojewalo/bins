@@ -25,6 +25,7 @@ extern crate rand;
 extern crate base64;
 #[macro_use]
 extern crate error_chain;
+extern crate uuid;
 
 macro_rules! option {
   ($e: expr) => {{
