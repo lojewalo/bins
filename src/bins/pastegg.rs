@@ -1,4 +1,5 @@
 use url::Url;
+use uuid::Uuid;
 use hyper::Client;
 use hyper::client::RequestBuilder;
 use hyper::header::{Headers, ContentType, UserAgent, Authorization};
@@ -113,11 +114,7 @@ impl CreatesHtmlUrls for PasteGg {
   }
 
   fn id_from_html_url(&self, url: &str) -> Option<String> {
-    let mut url = option!(Url::parse(url).ok());
-    url.set_fragment(None);
-    url.set_query(None);
-    let segments = option!(url.path_segments());
-    segments.last().map(|x| x.to_owned())
+    self.id_from_raw_url(url)
   }
 }
 
@@ -137,13 +134,10 @@ impl CreatesRawUrls for PasteGg {
     let mut url = option!(Url::parse(url).ok());
     url.set_fragment(None);
     url.set_query(None);
-    let segments: Vec<&str> = option!(url.path_segments()).collect();
-    let i = if segments.len() == 1 {
-      0
-    } else {
-      1
-    };
-    segments.get(i).map(|x| x.to_string())
+    option!(url.path_segments())
+      .flat_map(|x| Uuid::parse_str(x))
+      .map(|x| x.simple().to_string())
+      .next()
   }
 }
 
