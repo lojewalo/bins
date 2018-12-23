@@ -45,7 +45,7 @@ impl PasteGg {
 
   fn get_paste(&self, id: &str) -> Result<PasteGgPaste<FullPasteGgFile>> {
     debug!("getting paste for ID {}", id);
-    let builder = self.client.get(&format!("https://api.paste.gg/v0/pastes/{}?full=true", id));
+    let builder = self.client.get(&format!("https://api.paste.gg/v1/pastes/{}?full=true", id));
     let mut res = self.add_headers(builder).send()?;
     let mut content = String::new();
     res.read_to_string(&mut content)?;
@@ -124,7 +124,7 @@ impl CreatesRawUrls for PasteGg {
     let urls: Vec<PasteUrl> = paste.files.iter()
       .map(|file| PasteUrl::raw(
         file.name.clone().map(PasteFileName::Explicit),
-        format!("https://api.paste.gg/v0/pastes/{}/files/{}/raw", paste.id, file.id)
+        format!("https://api.paste.gg/v1/pastes/{}/files/{}/raw", paste.id, file.id)
       ))
       .collect();
     Ok(urls)
@@ -175,7 +175,7 @@ impl Uploads for PasteGg {
       files,
     };
     let upload_json = serde_json::to_string(&upload_file)?;
-    let builder = self.client.post("https://api.paste.gg/v0/pastes").body(&upload_json);
+    let builder = self.client.post("https://api.paste.gg/v1/pastes").body(&upload_json);
     let mut res = self.add_headers(builder).send()?;
     let mut content = String::new();
     res.read_to_string(&mut content)?;
