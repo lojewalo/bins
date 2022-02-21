@@ -1,4 +1,3 @@
-#![feature(step_trait)]
 #![recursion_limit = "1024"]
 
 extern crate url;
@@ -15,6 +14,7 @@ extern crate num_cpus;
 extern crate magic;
 #[macro_use]
 extern crate error_chain;
+extern crate num_traits;
 
 pub mod error;
 pub mod files;
@@ -24,10 +24,11 @@ use error::*;
 use range::{BidirectionalRange, AnyContains};
 use files::*;
 
-use hyper::Client;
+type Client = hyper::Client<hyper::client::connect::HttpConnector>;
 
 use scoped_threadpool::Pool;
 
+use std::str::FromStr;
 use std::io::Read;
 use std::sync::mpsc::channel;
 use std::collections::HashMap;
@@ -214,8 +215,9 @@ impl<T> Downloads for T
             return;
           } else {
             debug!("downloading {:?}", url);
-            let mut res = match self.client().get(url.url())
-              .send()
+            // TODO: Actual async
+            use futures::executor::block_on;
+            let mut res = match block_on(self.client().get(hyper::Uri::from_str(url.url()).unwrap()))
               .map_err(ErrorKind::Http) {
               Ok(r) => r,
               Err(e) => {
@@ -225,16 +227,23 @@ impl<T> Downloads for T
                 return;
               }
             };
-            let mut content = String::new();
-            if let Err(e) = res.read_to_string(&mut content).map_err(ErrorKind::Io) {
-              if let Err(tx_e) = tx_clone.send(Err(e)) {
-                error!("error sending result over channel: {}", tx_e);
-              }
-              return;
-            }
-            if res.status.class().default_code() != ::hyper::Ok {
+            let bytes = match block_on(hyper::body::to_bytes(res.body_mut())).map_err(ErrorKind::Http) {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    error!("Error reading bytes from body: {}", e);
+                    unreachable!()
+                }
+            };
+            let content = match String::from_utf8(Vec::from(&*bytes)) {
+                Ok(content) => content,
+                Err(e) => {
+                    error!("Invalid UTF8 in response: {}", e);
+                    unreachable!()
+                }
+            };
+            if !res.status().is_success() {
               debug!("bad status code");
-              let e = ErrorKind::InvalidStatus(res.status_raw().0, Some(content));
+              let e = ErrorKind::InvalidStatus(res.status().as_u16(), Some(content));
               if let Err(tx_e) = tx_clone.send(Err(e)) {
                 error!("error sending result over channel: {}", tx_e);
               }

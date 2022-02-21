@@ -1,5 +1,5 @@
 use url::ParseError;
-use hyper::error::Error as HyperError;
+use hyper::Error as HyperError;
 use serde_json::error::Error as JsonError;
 use toml::de::Error as TomlError;
 
@@ -25,7 +25,7 @@ error_chain! {
       description("a range had too many components")
       display("range had too many components")
     }
-    Thread(inside: Box<Any + Send + 'static>) {
+    Thread(inside: Box<dyn Any + Send + 'static>) {
       description("a thread panicked")
       display("a thread panicked")
     }

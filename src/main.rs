@@ -1,5 +1,3 @@
-#![feature(box_syntax)]
-
 extern crate bins as lib;
 extern crate hyper;
 #[cfg(feature = "openssl")]
@@ -56,8 +54,8 @@ use lib::range::BidirectionalRange;
 
 use clap::ArgMatches;
 use flate2::read::GzDecoder;
-use hyper::Client;
-use hyper::net::HttpsConnector;
+
+
 
 use std::path::{Path, PathBuf};
 use std::fs::{File, OpenOptions};
@@ -71,6 +69,8 @@ use std::sync::Arc;
 use log::LogLevel;
 
 use url::Url;
+
+type Client = hyper::Client<hyper::client::connect::HttpConnector>;
 
 macro_rules! report_error_using {
   ($using: ident, $fmt: expr, $e: expr $(, $args: expr),*) => {{
@@ -202,15 +202,15 @@ fn inner() -> i32 {
   let config = Arc::new(config);
   let cli_options = Arc::new(cli_options);
 
-  let bins: BTreeMap<String, Box<Bin>> = {
-    let bins: Vec<Box<Bin>> = vec![
-      box bins::Sprunge::new(),
-      box bins::Hastebin::new(),
-      box bins::Fedora::new(),
-      box bins::Gist::new(config.clone(), cli_options.clone()),
-      box bins::Bitbucket::new(config.clone(), cli_options.clone()),
-      box bins::Pastebin::new(config.clone(), cli_options.clone()),
-      box bins::PasteGg::new(config.clone(), cli_options.clone()),
+  let bins: BTreeMap<String, Box<dyn Bin>> = {
+    let bins: Vec<Box<dyn Bin>> = vec![
+      Box::new(bins::Sprunge::new()),
+      Box::new(bins::Hastebin::new()),
+      Box::new(bins::Fedora::new()),
+      Box::new(bins::Gist::new(config.clone(), cli_options.clone())),
+      Box::new(bins::Bitbucket::new(config.clone(), cli_options.clone())),
+      Box::new(bins::Pastebin::new(config.clone(), cli_options.clone())),
+      Box::new(bins::PasteGg::new(config.clone(), cli_options.clone())),
     ];
     bins.into_iter().map(|b| (b.name().to_owned(), b)).collect()
   };
@@ -298,7 +298,7 @@ fn print_version() {
 }
 
 struct Bins<'a> {
-  bins: BTreeMap<String, Box<Bin>>,
+  bins: BTreeMap<String, Box<dyn Bin>>,
   config: Arc<Config>,
   cli_options: Arc<CommandLineOptions>,
   matches: ArgMatches<'a>
@@ -390,12 +390,12 @@ impl<'a> Bins<'a> {
       .ok_or_else(|| "no bin was specified".into())
   }
 
-  fn bin(&self) -> Result<&Box<Bin>> {
+  fn bin(&self) -> Result<&Box<dyn Bin>> {
     let name = self.bin_name()?;
     self.bins.get(&name).ok_or_else(|| format!("there is no bin called \"{}\"", name).into())
   }
 
-  fn check_features(&self, bin: &Bin) -> Result<()> {
+  fn check_features(&self, bin: &dyn Bin) -> Result<()> {
     let bin_features = bin.features();
     let features = self.cli_features();
     for (feature, status) in features {
@@ -486,7 +486,7 @@ impl<'a> Bins<'a> {
     Ok(processed)
   }
 
-  fn url_output(&self, bin: &Bin, urls: &[PasteUrl]) -> Result<String> {
+  fn url_output(&self, bin: &dyn Bin, urls: &[PasteUrl]) -> Result<String> {
     let mut strings = Vec::new();
     for u in urls {
       let id = bin.id_from_html_url(u.url()).ok_or_else(|| ErrorKind::Msg("could not parse ID from URL".into()))?;
@@ -648,7 +648,7 @@ fn get_stdin() -> Result<UploadFile> {
   Ok(UploadFile::new("stdin".to_owned(), content))
 }
 
-fn error_parents(error: &Error) -> Vec<&Error> {
+fn error_parents(error: &dyn Error) -> Vec<&dyn Error> {
   let mut parents = Vec::new();
   let mut last_error = error;
   loop {

@@ -16,7 +16,7 @@ pub struct Hastebin {
 impl Hastebin {
   pub fn new() -> Hastebin {
     Hastebin {
-      client: ::new_client()
+      client: bins::main::new_client()
     }
   }
 

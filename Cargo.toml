@@ -6,6 +6,7 @@ authors = ["Kyle Clemens <bins@kyleclemens.com>"]
 repository = "https://github.com/jkcclemens/bins"
 readme = "README.md"
 license = "MPL-2.0"
+edition = "2018"
 
 build = "build.rs"
 
@@ -19,15 +20,15 @@ rustls = ["hyper-rustls"]
 [dependencies]
 toml = "0.4"
 clap = "2.23"
-hyper = "0.10"
-hyper-openssl = { version = "0.2", optional = true }
-hyper-rustls = { version = "0.6", optional = true }
+hyper = { version = "0.14", features = ["client", "http1"] }
+hyper-openssl = { version = "0.9", optional = true }
+hyper-rustls = { version = "0.23", optional = true }
 rand = "0.3"
 base64 = "0.5"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-url = "1.4"
+url = "2"
 flate2 = "0.2"
 log = "0.3"
 time = "0.1"
@@ -37,6 +38,12 @@ magic = { version = "0.12", optional = true }
 clipboard = { version = "0.3", optional = true }
 error-chain = "0.10"
 uuid = "0.6"
+num-traits = "0.2"
+futures = "0.3"
+
+[[bin]]
+name = "bins"
+path = "src/main.rs"
 
 [build-dependencies]
 git2 = "0.7"

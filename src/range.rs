@@ -1,7 +1,20 @@
 use std::ops::{Add, Sub};
-use std::iter::Step;
+use num_traits::*;
 
-use error::*;
+use crate::error::*;
+
+/// Stable alternative to `std::iter::Step`
+pub trait StableStep: Clone + PartialOrd<Self> + PrimInt + FromPrimitive {
+    #[inline]
+    fn forward(&self, count: usize) -> Option<Self> {
+        self.checked_add(&Self::from_usize(count)?)
+    }
+    #[inline]
+    fn backward(&self, count: usize) -> Option<Self> {
+        self.checked_sub(&Self::from_usize(count)?)
+    }
+}
+impl<T: PrimInt + FromPrimitive> StableStep for T {}
 
 #[derive(Debug, Clone)]
 pub struct BidirectionalRange<Idx> {
@@ -50,7 +63,7 @@ impl<Idx> BidirectionalRange<Idx>
   }
 }
 
-impl<A: Step + Copy> Iterator for BidirectionalRange<A>
+impl<A: StableStep + Copy> Iterator for BidirectionalRange<A>
   where for<'a> &'a A: Add<&'a A, Output=A>,
         for<'a> &'a A: Sub<&'a A, Output=A>
 {
@@ -62,7 +75,7 @@ impl<A: Step + Copy> Iterator for BidirectionalRange<A>
     }
     let current = match self.current.take() {
       Some(c) => {
-        if (self.start < self.end && c.add_one() == self.end) || c.sub_one() == self.end {
+        if (self.start < self.end && c.forward(1)? == self.end) || c.backward(1)? == self.end {
           return None;
         }
         c
@@ -73,9 +86,9 @@ impl<A: Step + Copy> Iterator for BidirectionalRange<A>
       }
     };
     if self.start < self.end {
-      self.current = Some(current.add_one());
+      self.current = Some(current.forward(1).unwrap());
     } else {
-      self.current = Some(current.sub_one());
+      self.current = Some(current.backward(1).unwrap());
     }
     self.current
   }
